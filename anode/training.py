@@ -3,9 +3,17 @@ import torch
 import torch.nn as nn
 from numpy import mean
 
-T = 36
-time_steps = int(pow(T, 1.5))
-dt = T/pow(T, 1.5)
+##--------------#
+##.. Turnpike
+T = 45.0
+time_steps = 180
+dt = T/time_steps
+
+##.. Not Turnpike
+#T = 81.0                
+#time_steps = int(pow(T, 1.5))
+#dt = T/pow(T, 1.5)
+##--------------#
 
 
 class Trainer():
@@ -50,24 +58,23 @@ class Trainer():
             x_batch = x_batch.to(self.device)
             y_batch = y_batch.to(self.device)
 
-            xd = torch.tensor([[2.0,2.0] if x==1 else [-2.0,-2.0] for x in y_batch])            
+            #xd = torch.tensor([[2.0,2.0] if x==1 else [-2.0,-2.0] for x in y_batch])            
             #xd = torch.tensor([[2.0,2.0,2.0] if x==1 else [-2.0,-2.0,-2.0] for x in y_batch])
  
-
             y_pred, traj = self.model(x_batch)
 
             if not self.is_resnet:
                 iteration_nfes = self._get_and_reset_nfes()
                 epoch_nfes += iteration_nfes            
 
-            ## ASYMPTOTICS
-            loss = self.loss_func(y_pred, y_batch)
+            ## ASYMPTOTICS
+            #loss = self.loss_func(y_pred, y_batch)
 
-            ## TURNPIKE 1
+            ## TURNPIKE 1
             #loss = 0.1*self.loss_func(y_pred, y_batch)+100*dt/2*sum([self.loss_func(traj[k], xd)+self.loss_func(traj[k+1], xd) for k in range(time_steps-1)])
             
-            ## TURNPIKE 2
-            #loss = 0.1*dt/2*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) for k in range(time_steps-1)])
+            ## TURNPIKE 2 (0.1*dt/2 before)
+            loss = 1.5*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) for k in range(time_steps-1)])
 
             loss.backward()
             self.optimizer.step()

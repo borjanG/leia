@@ -13,12 +13,22 @@ all_categorical_colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c',
                           '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f',
                           '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5']
 
-T = 36
-time_steps = int(pow(T, 1.5))
-#dt = T/time_steps
+##--------------#
+##.. Turnpike
+T = 45.0
+time_steps = 180
+dt = T/time_steps
+
+##.. Not Turnpike
+#T = 81.0                
+#time_steps = int(pow(T, 1.5))
+#dt = T/pow(T, 1.5)
+##--------------#
 integration_time = torch.linspace(0., T, time_steps)
 
 
+##--------------#
+##.. ?
 def vector_field_plt(odefunc, num_points, timesteps, inputs=None, targets=None,
                      model=None, h_min=-2., h_max=2., t_max=1., extra_traj=[],
                      save_fig=''):
@@ -61,7 +71,438 @@ def vector_field_plt(odefunc, num_points, timesteps, inputs=None, targets=None,
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
         plt.clf()
         plt.close()
+##--------------#
 
+##--------------#
+##.. ?
+
+def single_feature_plt(features, targets, save_fig=''):
+    alpha = 0.9
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    num_dims = features.shape[1]
+
+    if num_dims == 2:
+        plt.set_facecolor('whitesmoke')
+        plt.title('Training points')
+        plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
+                    alpha=alpha, marker = 'o', linewidths=0)
+        ax = plt.gca()
+    elif num_dims == 3:
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        ax.title('Training points')
+        ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(),
+                   features[:, 2].numpy(), c=color, alpha=alpha,
+                   linewidths=0, s=80)
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+    else:
+        plt.show()
+##--------------#
+
+##--------------#
+##.. ?
+
+def multi_feature_plt(features, targets, save_fig=''):
+    alpha = 0.5
+    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
+    num_dims = features[0].shape[1]
+
+    if num_dims == 2:
+        fig, axarr = plt.subplots(1, len(features), figsize=(20, 10))
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.xlabel(r'$x_{i, 1}$')
+        plt.ylabel(r'$x_{i, 2}$')
+        plt.title(r'Features $x_i(T)$ with $T=${}'.format(str(T)))   
+        for i in range(len(features)):
+            axarr[i].scatter(features[i][:, 0].numpy(), features[i][:, 1].numpy(),
+                             c=color, alpha=alpha, linewidths=0)
+            axarr[i].set_aspect(get_square_aspect_ratio(axarr[i]))
+    elif num_dims == 3:
+        fig = plt.figure(figsize=(20, 10))
+        for i in range(len(features)):
+            ax = fig.add_subplot(1, len(features), i + 1, projection='3d')
+
+            ax.scatter(features[i][:, 0].numpy(), features[i][:, 1].numpy(),
+                       features[i][:, 2].numpy(), c=color, alpha=alpha,
+                       linewidths=0, s=80)
+            ax.set_aspect(get_square_aspect_ratio(ax))
+    fig.subplots_adjust(wspace=0.01)
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+    else:
+        plt.show()
+##--------------#
+
+##--------------#
+##.. Plot of the trajectory?
+
+def trajectory_plt(model, inputs, targets, timesteps, highlight_inputs=False,
+                   include_arrow=False, save_fig=''):
+    alpha = 1
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    features = trajectories[-1]
+
+    if model.augment_dim > 0:
+        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+        inputs_aug = torch.cat([inputs, aug], 1)
+    else:
+        inputs_aug = inputs
+
+    input_dim = model.data_dim + model.augment_dim
+
+    if input_dim == 2:
+        input_linewidths = 2 if highlight_inputs else 0
+        plt.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(), c=color,
+                    alpha=alpha, linewidths=input_linewidths, edgecolor='orange')
+        plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
+                    alpha=alpha, linewidths=0)
+
+        for i in range(inputs_aug.shape[0]):
+            trajectory = trajectories[:, i, :]
+            x_traj = trajectory[:, 0].numpy()
+            y_traj = trajectory[:, 1].numpy()
+            plt.plot(x_traj, y_traj, c=color[i], alpha=alpha)
+            if include_arrow:
+                arrow_start = x_traj[-2], y_traj[-2]
+                arrow_end = x_traj[-1], y_traj[-1]
+                plt.arrow(arrow_start[0], arrow_start[1],
+                          arrow_end[0] - arrow_start[0],
+                          arrow_end[1] - arrow_start[1], shape='full', lw=0,
+                          length_includes_head=True, head_width=0.15,
+                          color=color[i], alpha=alpha)
+
+        ax = plt.gca()
+    elif input_dim == 3:
+        # Create figure
+        fig = plt.figure()
+        ax = Axes3D(fig)
+
+        input_linewidths = 1 if highlight_inputs else 0
+        ax.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(),
+                   inputs_aug[:, 2].numpy(), c=color, alpha=alpha,
+                   linewidths=input_linewidths, edgecolor='orange')
+        ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(),
+                   features[:, 2].numpy(), c=color, alpha=alpha, linewidths=0)
+
+        for i in range(inputs_aug.shape[0]):
+            trajectory = trajectories[:, i, :]
+            x_traj = trajectory[:, 0].numpy()
+            y_traj = trajectory[:, 1].numpy()
+            z_traj = trajectory[:, 2].numpy()
+            ax.plot(x_traj, y_traj, z_traj, c=color[i], alpha=alpha)
+
+            if include_arrow:
+                arrow_start = x_traj[-2], y_traj[-2], z_traj[-2]
+                arrow_end = x_traj[-1], y_traj[-1], z_traj[-1]
+
+                arrow = Arrow3D([arrow_start[0], arrow_end[0]],
+                                [arrow_start[1], arrow_end[1]],
+                                [arrow_start[2], arrow_end[2]],
+                                mutation_scale=15,
+                                lw=0, color=color[i], alpha=alpha)
+                ax.add_artist(arrow)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+    else:
+        raise RuntimeError("Input dimension must be 2 or 3 but was {}".format(input_dim))
+
+    ax.set_aspect(get_square_aspect_ratio(ax))
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+##--------------#
+
+##--------------#
+##.. First component in 1d
+
+def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='first.pdf'):
+    
+    #integration_time_subset = integration_time[0:timesteps] #################### addition here
+    
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    alpha = 0.75
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    #trajectories = model.odeblock.trajectory(inputs, time_steps).detach()################# change here
+    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    features = trajectories[-1]
+
+    if model.augment_dim > 0:
+        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+        inputs_aug = torch.cat([inputs, aug], 1)
+    else:
+        inputs_aug = inputs
+
+    input_dim = model.data_dim + model.augment_dim
+
+#    if input_dim == 2:
+#        input_linewidths = 2 if highlight_inputs else 0
+        
+    for i in range(inputs_aug.shape[0]):
+        trajectory = trajectories[:, i, :]
+        ax = plt.gca()
+        ax.set_facecolor('whitesmoke')
+        #trajectory = trajectories[0:timesteps, i, :] #################### change here
+        x_traj = trajectory[:, 0].numpy()
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.title(r'$\mathbf{x}_{i}^1(t)$ component', fontsize=12)
+        plt.xlabel(r'$t$ (layers)')
+        plt.plot(integration_time, x_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        
+        ax.set_xlim([0, T])
+
+    ax = plt.gca()
+    #ax.set_aspect(get_square_aspect_ratio(ax))
+    
+    dpi=150
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight') 
+        #plt.savefig(save_fig, format='png', dpi=dpi, bbox_inches='tight') ####### change here
+        plt.clf()
+        plt.close()
+##--------------#
+
+##--------------#
+##.. Second component in 2d
+
+def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='second.pdf'):
+
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    alpha = 0.75
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    features = trajectories[-1]
+
+    if model.augment_dim > 0:
+        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+        inputs_aug = torch.cat([inputs, aug], 1)
+    else:
+        inputs_aug = inputs
+
+    input_dim = model.data_dim + model.augment_dim
+
+    #if input_dim == 2:
+    #input_linewidths = 2 if highlight_inputs else 0
+    
+    for i in range(inputs_aug.shape[0]):
+        trajectory = trajectories[:, i, :]
+        y_traj = trajectory[:, 1].numpy()
+        ax = plt.gca()
+        ax.set_facecolor('whitesmoke')
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.title(r'$\mathbf{x}_{i}^2(t)$ component', fontsize=12)
+        plt.xlabel(r'$t$ (layers)')
+        plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        ax.set_xlim([0, T])
+    
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+##--------------#
+        
+##--------------#
+##.. Third component in 3d
+
+def plt_z_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='third.pdf'):
+
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    alpha = 0.75
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    features = trajectories[-1]
+
+    if model.augment_dim > 0:
+        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+        inputs_aug = torch.cat([inputs, aug], 1)
+    else:
+        inputs_aug = inputs
+
+    input_dim = model.data_dim + model.augment_dim
+
+    #if input_dim == 2:
+    #input_linewidths = 2 if highlight_inputs else 0
+    
+    for i in range(inputs_aug.shape[0]):
+        trajectory = trajectories[:, i, :]
+        y_traj = trajectory[:, 2].numpy()
+        ax = plt.gca()
+        ax.set_facecolor('whitesmoke')
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        plt.title(r'$\mathbf{x}_{i}^3(t)$ component', fontsize=12)
+        plt.xlabel(r'$t$ (layers)')
+        plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        ax.set_xlim([0, T])
+    
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+##--------------#
+
+# ##--------------#
+# ##.. The norm of x(t)
+
+# def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='norm.pdf'):
+
+#     from matplotlib import rc
+#     rc("text", usetex = True)
+#     font = {'size'   : 18}
+#     rc('font', **font)
+    
+#     alpha = 0.75
+#     color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+#     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+#     features = trajectories[-1]
+
+#     if model.augment_dim > 0:
+#         aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+#         inputs_aug = torch.cat([inputs, aug], 1)
+#     else:
+#         inputs_aug = inputs
+
+#     input_dim = model.data_dim + model.augment_dim
+
+#     if input_dim == 2:
+#         input_linewidths = 2 if highlight_inputs else 0
+#         x_norm = [np.linalg.norm(trajectories[k, :, : ], ord = 'fro') for k in range(timesteps)]
+        
+#         ax = plt.gca()
+#         ax.set_facecolor('whitesmoke')
+#         plt.rc('text', usetex=True)
+#         plt.rc('font', family='serif')
+#         #plt.title(r'$t\mapsto|\mathbf{x}(t)|^2$')
+#         plt.title(r'$t\mapsto|u(t)|^2$')
+#         plt.xlabel(r'$t$ (layers)')
+#         #plt.ylabel(r'$|\mathbf{x}(t)|^2$')
+#         plt.ylabel(r'$|u(t)|^2$')
+#         plt.plot(integration_time, x_norm, c='blue', alpha=alpha, linewidth=2)
+#         ax.set_xlim([0, 20])
+    
+#     if len(save_fig):
+#         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+#         plt.clf()
+#         plt.close()  
+# ##--------------# 
+
+##--------------#
+##.. The norm of x1 and x2(t)
+
+def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='norm.pdf'):
+
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    alpha = 0.85
+    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    features = trajectories[-1]
+
+    if model.augment_dim > 0:
+        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
+        inputs_aug = torch.cat([inputs, aug], 1)
+    else:
+        inputs_aug = inputs
+
+    input_dim = model.data_dim + model.augment_dim
+
+    #if input_dim == 2:
+    input_linewidths = 2 if highlight_inputs else 0
+    #x_norm = [np.linalg.norm(trajectories[k, :, : ], ord = 'fro') for k in range(timesteps)]
+    x_norm_0 = [np.linalg.norm(trajectories[k, :, 0]) for k in range(timesteps)]
+    x_norm_1 = [np.linalg.norm(trajectories[k, :, 1]) for k in range(timesteps)]
+
+
+    ax = plt.gca()
+    ax.set_facecolor('whitesmoke')
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    #plt.title(r'$t\mapsto|\mathbf{x}(t)|^2$')
+    #plt.title(r'$t\mapsto|\mathbf{x}^j(t)|^2$')
+    plt.xlabel(r'$t$ (layers)')
+    #plt.ylabel(r'$|\mathbf{x}(t)|^2$')
+    #plt.ylabel(r'$|x^j(t)|^2$')
+    #plt.plot(integration_time, x_norm, c='blue', alpha=alpha, linewidth=2)
+    plt.plot(integration_time, x_norm_0, c='darkorange', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^1(t)|^2$')
+    plt.plot(integration_time, x_norm_1, c='seagreen', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^2(t)|^2$')
+    if input_dim == 3:
+        x_norm_2 = [np.linalg.norm(trajectories[k, :, 2]) for k in range(timesteps)]
+        plt.plot(integration_time, x_norm_2, c='blue', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^3(t)|^2$')
+    #plt.axvspan(10, 20, facecolor='0.1', alpha=0.05)
+    #ax.legend()
+    #ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+    #  fancybox=True, shadow=True, ncol=5)
+    ax.legend(prop={'size': 10}, fancybox=True, framealpha=0.2)
+    plt.title(r'Norms of $\mathbf{x}(t)=\{\mathbf{x}^j(t)\}_{j=1}^d$', fontsize=12)
+    ax.set_xlim([0, T])
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()  
+##--------------# 
+
+
+##--------------#
+##.. Plotting the inferred function?
+def input_space_plt(model, plot_range=(-2., 2.), num_steps=201, save_fig='generalization.pdf'):
+
+    grid = torch.zeros((num_steps * num_steps, 2))
+    idx = 0
+    for x1 in np.linspace(plot_range[0], plot_range[1], num_steps):
+        for x2 in np.linspace(plot_range[0], plot_range[1], num_steps):
+            grid[idx, :] = torch.Tensor([x1, x2])
+            idx += 1
+
+    predictions, traj = model(grid)
+    pred_grid = predictions.view(num_steps, num_steps).detach()
+
+    colors = [(1, 1, 1), (0, 0, 1), (0.5, 0, 0.5), (1, 0, 0), (1, 1, 1)]
+    colormap = LinearSegmentedColormap.from_list('cmap_red_blue', colors, N=300)
+
+    # Plot input space as a heatmap
+    plt.imshow(pred_grid, vmin=-2., vmax=2., cmap=colormap, alpha=0.75)
+    plt.colorbar()
+    plt.tick_params(axis='both', which='both', bottom=False, top=False,
+                        labelbottom=False, right=False, left=False,
+                        labelleft=False)
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()
+##--------------#
+
+##--------------#
+##.. Error plots
 
 def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
                   labels=[], include_mean=True, nfe_type='nfe',
@@ -153,285 +594,9 @@ def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
         plt.clf()
         plt.close()
+##--------------#
 
-
-def single_feature_plt(features, targets, save_fig=''):
-    alpha = 0.9
-    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
-    num_dims = features.shape[1]
-
-    if num_dims == 2:
-        plt.title('Training points')
-        plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
-                    alpha=alpha, marker = 'o', linewidths=0)
-        #plt.tick_params(axis='both', which='both', bottom=False, top=False,
-        #                labelbottom=False, right=False, left=False,
-        #                labelleft=False)
-        ax = plt.gca()
-    elif num_dims == 3:
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        ax.title('Training points')
-        ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(),
-                   features[:, 2].numpy(), c=color, alpha=alpha,
-                   linewidths=0, s=80)
-        #ax.tick_params(axis='both', which='both', bottom=False, top=False,
-        #               labelbottom=False, right=False, left=False,
-        #               labelleft=False)
-
-    ax.set_aspect(get_square_aspect_ratio(ax))
-
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-    else:
-        plt.show()
-
-
-def multi_feature_plt(features, targets, save_fig=''):
-    alpha = 0.5
-    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
-    num_dims = features[0].shape[1]
-
-    if num_dims == 2:
-        fig, axarr = plt.subplots(1, len(features), figsize=(20, 10))
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
-        plt.xlabel(r'$x_{i, 1}$')
-        plt.ylabel(r'$x_{i, 2}$')
-        plt.title(r'Features $x_i(T)$ with $T=${}'.format(str(T)))   
-        for i in range(len(features)):
-            axarr[i].scatter(features[i][:, 0].numpy(), features[i][:, 1].numpy(),
-                             c=color, alpha=alpha, linewidths=0)
-            #axarr[i].tick_params(axis='both', which='both', bottom=False,
-            #                     top=False, labelbottom=False, right=False,
-            #                     left=False, labelleft=False)
-            axarr[i].set_aspect(get_square_aspect_ratio(axarr[i]))
-    elif num_dims == 3:
-        fig = plt.figure(figsize=(20, 10))
-        for i in range(len(features)):
-            ax = fig.add_subplot(1, len(features), i + 1, projection='3d')
-
-            ax.scatter(features[i][:, 0].numpy(), features[i][:, 1].numpy(),
-                       features[i][:, 2].numpy(), c=color, alpha=alpha,
-                       linewidths=0, s=80)
-            #ax.tick_params(axis='both', which='both', bottom=False, top=False,
-            #               labelbottom=False, right=False, left=False,
-            #               labelleft=False)
-            ax.set_aspect(get_square_aspect_ratio(ax))
-
-    fig.subplots_adjust(wspace=0.01)
-
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-    else:
-        plt.show()
-
-
-def trajectory_plt(model, inputs, targets, timesteps, highlight_inputs=False,
-                   include_arrow=False, save_fig=''):
-    alpha = 0.5
-    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-    if input_dim == 2:
-        input_linewidths = 2 if highlight_inputs else 0
-        plt.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(), c=color,
-                    alpha=alpha, linewidths=input_linewidths, edgecolor='orange')
-        plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
-                    alpha=alpha, linewidths=0)
-
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            x_traj = trajectory[:, 0].numpy()
-            y_traj = trajectory[:, 1].numpy()
-            plt.plot(x_traj, y_traj, c=color[i], alpha=alpha)
-            if include_arrow:
-                arrow_start = x_traj[-2], y_traj[-2]
-                arrow_end = x_traj[-1], y_traj[-1]
-                plt.arrow(arrow_start[0], arrow_start[1],
-                          arrow_end[0] - arrow_start[0],
-                          arrow_end[1] - arrow_start[1], shape='full', lw=0,
-                          length_includes_head=True, head_width=0.15,
-                          color=color[i], alpha=alpha)
-
-        plt.tick_params(axis='both', which='both', bottom=False, top=False,
-                        labelbottom=False, right=False, left=False,
-                        labelleft=False)
-
-        ax = plt.gca()
-    elif input_dim == 3:
-        # Create figure
-        fig = plt.figure()
-        ax = Axes3D(fig)
-
-        input_linewidths = 1 if highlight_inputs else 0
-        ax.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(),
-                   inputs_aug[:, 2].numpy(), c=color, alpha=alpha,
-                   linewidths=input_linewidths, edgecolor='orange')
-        ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(),
-                   features[:, 2].numpy(), c=color, alpha=alpha, linewidths=0)
-
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            x_traj = trajectory[:, 0].numpy()
-            y_traj = trajectory[:, 1].numpy()
-            z_traj = trajectory[:, 2].numpy()
-            ax.plot(x_traj, y_traj, z_traj, c=color[i], alpha=alpha)
-
-            if include_arrow:
-                arrow_start = x_traj[-2], y_traj[-2], z_traj[-2]
-                arrow_end = x_traj[-1], y_traj[-1], z_traj[-1]
-
-                arrow = Arrow3D([arrow_start[0], arrow_end[0]],
-                                [arrow_start[1], arrow_end[1]],
-                                [arrow_start[2], arrow_end[2]],
-                                mutation_scale=15,
-                                lw=0, color=color[i], alpha=alpha)
-                ax.add_artist(arrow)
-
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_zticks([])
-    else:
-        raise RuntimeError("Input dimension must be 2 or 3 but was {}".format(input_dim))
-
-    ax.set_aspect(get_square_aspect_ratio(ax))
-
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-
-
-def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='first.pdf'):
-    
-    from matplotlib import rc
-    rc("text", usetex = True)
-    font = {'size'   : 18}
-    rc('font', **font)
-    
-    alpha = 0.5
-    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-    if input_dim == 2:
-        input_linewidths = 2 if highlight_inputs else 0
-        
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            x_traj = trajectory[:, 0].numpy()
-            plt.rc('text', usetex=True)
-            plt.rc('font', family='serif')
-            plt.title(r'$\mathbf{x}_{i, 1}(t)$')
-            plt.xlabel(r'$t$ (layers)')
-            plt.plot(integration_time, x_traj, c=color[i], alpha=alpha, linewidth=0.75)
-            
-            ax = plt.gca()
-            ax.set_xlim([0, T])
-
-        ax = plt.gca()
-    ax.set_aspect(get_square_aspect_ratio(ax))
-    
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-
-def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='second.pdf'):
-
-    from matplotlib import rc
-    rc("text", usetex = True)
-    font = {'size'   : 18}
-    rc('font', **font)
-    
-    alpha = 0.5
-    color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-    if input_dim == 2:
-        input_linewidths = 2 if highlight_inputs else 0
-        
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            y_traj = trajectory[:, 1].numpy()
-            plt.rc('text', usetex=True)
-            plt.rc('font', family='serif')
-            plt.title(r'$\mathbf{x}_{i, 2}(t)$')
-            plt.xlabel(r'$t$ (layers)')
-            plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
-            
-            ax = plt.gca()
-            ax.set_xlim([0, T])
-        
-        ax = plt.gca()
-    ax.set_aspect(get_square_aspect_ratio(ax))
-    
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-
-
-def input_space_plt(model, plot_range=(-2., 2.), num_steps=201, save_fig='gen.pdf'):
-
-    grid = torch.zeros((num_steps * num_steps, 2))
-    idx = 0
-    for x1 in np.linspace(plot_range[0], plot_range[1], num_steps):
-        for x2 in np.linspace(plot_range[0], plot_range[1], num_steps):
-            grid[idx, :] = torch.Tensor([x1, x2])
-            idx += 1
-
-    predictions, traj = model(grid)
-    pred_grid = predictions.view(num_steps, num_steps).detach()
-
-    colors = [(1, 1, 1), (0, 0, 1), (0.5, 0, 0.5), (1, 0, 0), (1, 1, 1)]
-    colormap = LinearSegmentedColormap.from_list('cmap_red_blue', colors, N=300)
-
-    # Plot input space as a heatmap
-    plt.imshow(pred_grid, vmin=-2., vmax=2., cmap=colormap, alpha=0.75)
-    plt.colorbar()
-    plt.tick_params(axis='both', which='both', bottom=False, top=False,
-                        labelbottom=False, right=False, left=False,
-                        labelleft=False)
-
-    if len(save_fig):
-        #plt.savefig(save_fig, format='png', dpi=400, bbox_inches='tight')
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-
-
+##--------------#
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
         FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
@@ -469,7 +634,6 @@ def get_feature_history(trainer, dataloader, inputs, targets, num_epochs):
         feature_history.append(features.detach())
 
     return feature_history
-
 
 def get_square_aspect_ratio(plt_axis):
     return np.diff(plt_axis.get_xlim())[0] / np.diff(plt_axis.get_ylim())[0]
