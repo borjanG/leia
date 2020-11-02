@@ -74,6 +74,35 @@ class ConcentricSphere(Dataset):
 
     def __len__(self):
         return len(self.data)
+    
+class Mnist1d(Dataset):
+    def __init__(self):
+    
+        self.data = []
+        self.targets = []
+        
+        data_loader, test_loader = mnist(batch_size=256, size=28)
+
+        for _inputs, targets in data_loader:
+            break
+
+        inputs = torch.zeros(256, pow(28, 2))
+        for i, x in enumerate(_inputs):
+            inputs[i] = x.reshape(-1)
+
+        for _ in range(256):
+            self.data.append(inputs[_])
+            self.targets.append(targets[_])
+            #if targets[_]>5:
+            #    self.targets.append(torch.Tensor([1]))
+            #else:
+            #    self.targets.append(torch.Tensor([-1]))
+
+    def __getitem__(self, index):
+        return self.data[index], self.targets[index]
+
+    def __len__(self):
+        return len(self.data)
 
 
 class ShiftedSines(Dataset):

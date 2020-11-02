@@ -1,12 +1,9 @@
-import json
-import torch
 import torch.nn as nn
-from numpy import mean
 
 ##--------------#
 ##.. Turnpike
-T = 45.0
-time_steps = 180
+T = 40.0
+time_steps = 40
 dt = T/time_steps
 
 ##.. Not Turnpike
@@ -14,7 +11,6 @@ dt = T/time_steps
 #time_steps = int(pow(T, 1.5))
 #dt = T/pow(T, 1.5)
 ##--------------#
-
 
 class Trainer():
     def __init__(self, model, optimizer, device, classification=True,
@@ -24,7 +20,8 @@ class Trainer():
         self.classification = classification
         self.device = device
         if self.classification:
-            self.loss_func = nn.MSELoss()
+            #self.loss_func = nn.MSELoss()
+            self.loss_func = nn.CrossEntropyLoss()
         else:
             #self.loss_func = nn.SmoothL1Loss()
             self.loss_func = nn.MSELoss()
@@ -33,12 +30,6 @@ class Trainer():
         self.steps = 0
         self.save_dir = save_dir
         self.verbose = verbose
-
-        self.histories = {'loss_history': [], 'nfe_history': [],
-                          'bnfe_history': [], 'total_nfe_history': [],
-                          'epoch_loss_history': [], 'epoch_nfe_history': [],
-                          'epoch_bnfe_history': [], 'epoch_total_nfe_history': []}
-        self.buffer = {'loss': [], 'nfe': [], 'bnfe': [], 'total_nfe': []}
 
         self.is_resnet = hasattr(self.model, 'num_layers')
 
@@ -57,11 +48,9 @@ class Trainer():
 
             x_batch = x_batch.to(self.device)
             y_batch = y_batch.to(self.device)
-
-            #xd = torch.tensor([[2.0,2.0] if x==1 else [-2.0,-2.0] for x in y_batch])            
-            #xd = torch.tensor([[2.0,2.0,2.0] if x==1 else [-2.0,-2.0,-2.0] for x in y_batch])
- 
-            y_pred, traj = self.model(x_batch)
+            
+            y_pred, traj, _ = self.model(x_batch)
+            #y_pred = self.model(x_batch)
 
             if not self.is_resnet:
                 iteration_nfes = self._get_and_reset_nfes()
@@ -86,51 +75,14 @@ class Trainer():
 
             if i % self.print_freq == 0:
                 if self.verbose:
-                    print("\nIteration {}/{}".format(i, len(data_loader)))
-                    print("Loss: {:.3f}".format(loss.item()))
+                    print("\nEpoch {}/{}".format(i, len(data_loader)))
+                    #print("Loss: {:.3f}".format(loss.item()))
+                    print("Loss: {:.3f}".format(self.loss_func(y_pred, y_batch).item()))
                     if not self.is_resnet:
                         print("NFE: {}".format(iteration_nfes))
-                        print("BNFE: {}".format(iteration_backward_nfes))
                         print("Total NFE: {}".format(iteration_nfes + iteration_backward_nfes))
-
-            self.buffer['loss'].append(loss.item())
-            if not self.is_resnet:
-                self.buffer['nfe'].append(iteration_nfes)
-                self.buffer['bnfe'].append(iteration_backward_nfes)
-                self.buffer['total_nfe'].append(iteration_nfes + iteration_backward_nfes)
-
-            if self.steps % self.record_freq == 0:
-                self.histories['loss_history'].append(mean(self.buffer['loss']))
-
-                if not self.is_resnet:
-                    self.histories['nfe_history'].append(mean(self.buffer['nfe']))
-                    self.histories['bnfe_history'].append(mean(self.buffer['bnfe']))
-                    self.histories['total_nfe_history'].append(mean(self.buffer['total_nfe']))
-
-                self.buffer['loss'] = []
-                self.buffer['nfe'] = []
-                self.buffer['bnfe'] = []
-                self.buffer['total_nfe'] = []
-
-                if self.save_dir is not None:
-                    dir, id = self.save_dir
-                    with open('{}/losses{}.json'.format(dir, id), 'w') as f:
-                        json.dump(self.histories['loss_history'], f)
-                    if not self.is_resnet:
-                        with open('{}/nfes{}.json'.format(dir, id), 'w') as f:
-                            json.dump(self.histories['nfe_history'], f)
-                        with open('{}/bnfes{}.json'.format(dir, id), 'w') as f:
-                            json.dump(self.histories['bnfe_history'], f)
-                        with open('{}/total_nfes{}.json'.format(dir, id), 'w') as f:
-                            json.dump(self.histories['total_nfe_history'], f)
-
+            
             self.steps += 1
-
-        self.histories['epoch_loss_history'].append(epoch_loss / len(data_loader))
-        if not self.is_resnet:
-            self.histories['epoch_nfe_history'].append(float(epoch_nfes) / len(data_loader))
-            self.histories['epoch_bnfe_history'].append(float(epoch_backward_nfes) / len(data_loader))
-            self.histories['epoch_total_nfe_history'].append(float(epoch_backward_nfes + epoch_nfes) / len(data_loader))
 
         return epoch_loss / len(data_loader)
 

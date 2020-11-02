@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class ResidualBlock(nn.Module):
@@ -18,7 +19,7 @@ class ResidualBlock(nn.Module):
         )
 
     def forward(self, x):
-        return x + self.mlp(x)
+        return x + 0.25*self.mlp(x)
 
 
 class ResNet(nn.Module):
@@ -34,14 +35,19 @@ class ResNet(nn.Module):
         self.is_img = is_img
 
     def forward(self, x, return_features=False):
+        traj = list()
+        traj.append(self.residual_blocks[0](x.view(x.size(0),-1)))
         if self.is_img:
+            for k in range(1, self.num_layers):
+                traj.append(self.residual_blocks[k](traj[k-1]))
             features = self.residual_blocks(x.view(x.size(0), -1))
         else:
             features = self.residual_blocks(x)
         pred = self.linear_layer(features)
+        _traj = [self.linear_layer(_) for _ in traj]
         if return_features:
             return features, pred
-        return pred
+        return pred, _traj, traj
 
     @property
     def hidden_dim(self):

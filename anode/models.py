@@ -1,17 +1,13 @@
 import torch
 import torch.nn as nn
-from math import pi
 from torchdiffeq import odeint, odeint_adjoint
-from math import pi, sin, sqrt, cos
-from functools import reduce
-from operator import mul
 
 MAX_NUM_STEPS = 1000    #.. Maximum number of steps for ODE solver
 
 ##--------------#
 ##.. Turnpike
-T = 45.0
-time_steps = 180
+T = 5.0
+time_steps = 5
 dt = T/time_steps
 
 ##.. Not Turnpike
@@ -37,8 +33,8 @@ class ODEFunc(nn.Module):
         ##--------------#
         ##.. Activation functions
         if non_linearity == 'relu':
-            #self.non_linearity = nn.ReLU(inplace=True)
-            self.non_linearity = nn.LeakyReLU(negative_slope=0.25, inplace=True)
+            self.non_linearity = nn.ReLU(inplace=True)
+            #self.non_linearity = nn.LeakyReLU(negative_slope=0.25, inplace=True)
         else:
             self.non_linearity = nn.Tanh()
         ##--------------#
@@ -60,7 +56,7 @@ class ODEFunc(nn.Module):
         ##.. R^{d_hid} -> R^{d_hid} layer
         self.fc2_time = nn.Linear(hidden_dim, hidden_dim*time_steps)
         ##.. R^{d_hid} -> R^{d_aug} layer
-        #self.fc3_time = nn.Linear(hidden_dim, time_steps)
+        #self.fc3_time = nn.Linear(hidden_dim, self.input_dim*time_steps)
         ##--------------#
 
     def forward(self, t, x):
@@ -72,20 +68,43 @@ class ODEFunc(nn.Module):
         ##--------------#
         
         #---------------#
+        ## In the case of Lin et al. '18 model
         #weights_1 = self.fc1_time.weight
         #weights_2 = self.fc3_time.weight
         #biases = self.fc1_time.bias
         #---------------#
 
-        if t==0:
-            return x
+        if "cat" == "dog":
+        #if t==0:
+            return x.view(x.size(0), -1)
+            #return x
         else:
             ##--------------#
+            # My very own original model:
             out = self.non_linearity(x)        
             k = int(t/dt)
-            w_t = weights[k*self.input_dim:(k+1)*self.input_dim] 
-            b_t = biases[k*self.input_dim:(k+1)*self.input_dim]
+            w_t = weights[k*self.hidden_dim : (k+1)*self.hidden_dim] 
+            b_t = biases[k*self.hidden_dim : (k+1)*self.hidden_dim]
             out = out.matmul(w_t.t())+b_t
+            ##--------------#
+            
+            
+            ##--------------#
+            ## a la Dupont
+#            k = int(t/dt)
+#            weights1 = self.fc1_time.weight
+#            biases1 = self.fc1_time.bias
+#            weights2 = self.fc3_time.weight
+#            biases2 = self.fc3_time.bias
+#            w1_t = weights1[k*self.hidden_dim : (k+1)*self.hidden_dim] 
+#            b1_t = biases1[k*self.hidden_dim : (k+1)*self.hidden_dim]
+#            w2_t = weights2[k*self.input_dim : (k+1)*self.input_dim] 
+#            b2_t = biases2[k*self.input_dim : (k+1)*self.input_dim]
+#            out = x.matmul(w1_t.t()) + b1_t
+#            out = self.non_linearity(out)
+#            out = out.matmul(w2_t.t()) + b2_t
+#            out = self.non_linearity(out)
+            ##--------------#
             
 #            k = int(t/dt)
 #            w_t = weights_1[k:(k+1)]  
@@ -123,6 +142,7 @@ class ODEBlock(nn.Module):
                                   height, width).to(self.device)
                 x_aug = torch.cat([x, aug], 1)
             else:
+                x = x.view(x.size(0), -1)
                 aug = torch.zeros(x.shape[0], self.odefunc.augment_dim).to(self.device)
                 x_aug = torch.cat([x, aug], 1)
         else:
@@ -163,7 +183,11 @@ class ODENet(nn.Module):
         self.data_dim = data_dim
         self.hidden_dim = hidden_dim
         self.augment_dim = augment_dim
-        self.output_dim = output_dim
+        
+        ## Output_dim = 1 in case of binary, = 10 in case of Mnist
+        #self.output_dim = output_dim
+        self.output_dim = 10
+        
         self.tol = tol
 
         odefunc = ODEFunc(device, data_dim, hidden_dim, augment_dim, non_linearity)
@@ -180,7 +204,7 @@ class ODENet(nn.Module):
 
         features = self.odeblock(x)
         pred = self.linear_layer(features)
-        pred = self.non_linearity(pred)
+        #pred = self.non_linearity(pred)
 
         self.traj = self.odeblock.trajectory(x, time_steps)
         self.proj_traj = self.linear_layer(self.traj)
@@ -189,4 +213,6 @@ class ODENet(nn.Module):
         if return_features:
             return features, pred
         return pred, self.proj_traj
-        #return pred, self.traj
+        
+        #return pred
+        ####return pred, self.traj

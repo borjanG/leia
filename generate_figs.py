@@ -21,6 +21,7 @@ dataloader = DataLoader(data_line, batch_size=64, shuffle=True)
 dataloader_viz = DataLoader(data_line, batch_size=128, shuffle=True)
 for inputs, targets in dataloader_viz:
     break
+
 ##--------------#
 
 ##--------------#
@@ -29,9 +30,10 @@ hidden_dim = 2
 data_dim = 2	
 anode = ODENet(device, data_dim, hidden_dim, augment_dim=0, non_linearity='tanh')
 
-##.. Turnpike (weight_decay=1? for 2d, T=45, num_steps=180)
-T = 45.0
-num_steps = 180
+##.. Turnpike (weight_decay=1 for 2d, T=45, num_steps=180)
+##.. et meme weight_decay=1, T=20, num_steps=20 avec 500 epochs!
+T = 20
+num_steps = 20
 dt = T/num_steps
 
 ##.. No turnpike (weight_decay=dt works well in 2d, dt*0.1 in 3d, for T=45 and num_steps=180.)
@@ -43,12 +45,12 @@ dt = T/num_steps
 ##--------------#
 
 #optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=dt*0.25)
-optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=dt*4)
+optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=dt)
 
 ##--------------#
 ##.. Set up trainer
 trainer_anode = Trainer(anode, optimizer_anode, device)
-num_epochs = 200
+num_epochs = 500
 ##.. Optionally record how the features evolve during training
 visualize_features = True
 if visualize_features:

@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 ##--------------#
 ##.. Turnpike
-T = 45.0
-time_steps = 180
+T = 20.0
+time_steps = 20
 dt = T/time_steps
 
 ##.. Not Turnpike

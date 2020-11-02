@@ -15,8 +15,8 @@ all_categorical_colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c',
 
 ##--------------#
 ##.. Turnpike
-T = 45.0
-time_steps = 180
+T = 40.0
+time_steps = 40
 dt = T/time_steps
 
 ##.. Not Turnpike
@@ -237,10 +237,10 @@ def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, s
     rc('font', **font)
     
     alpha = 0.75
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    #color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
     #trajectories = model.odeblock.trajectory(inputs, time_steps).detach()################# change here
     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
+    #features = trajectories[-1]
 
     if model.augment_dim > 0:
         aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
@@ -259,11 +259,14 @@ def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, s
         ax.set_facecolor('whitesmoke')
         #trajectory = trajectories[0:timesteps, i, :] #################### change here
         x_traj = trajectory[:, 0].numpy()
+        #print(x_traj, 'here')
+        #print(integration_time, 'ici')
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         plt.title(r'$\mathbf{x}_{i}^1(t)$ component', fontsize=12)
         plt.xlabel(r'$t$ (layers)')
-        plt.plot(integration_time, x_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        #plt.plot(integration_time, x_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        plt.plot(integration_time, x_traj, c='blue', alpha=alpha, linewidth=0.75)
         
         ax.set_xlim([0, T])
 
@@ -280,7 +283,7 @@ def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, s
 
 ##--------------#
 ##.. Second component in 2d
-
+        
 def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='second.pdf'):
 
     from matplotlib import rc
@@ -289,9 +292,9 @@ def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, s
     rc('font', **font)
     
     alpha = 0.75
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    # In the case of binary classification..? 
+    #color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
 
     if model.augment_dim > 0:
         aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
@@ -299,21 +302,20 @@ def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, s
     else:
         inputs_aug = inputs
 
-    input_dim = model.data_dim + model.augment_dim
-
     #if input_dim == 2:
     #input_linewidths = 2 if highlight_inputs else 0
     
     for i in range(inputs_aug.shape[0]):
         trajectory = trajectories[:, i, :]
-        y_traj = trajectory[:, 1].numpy()
+        y_traj = trajectory[:, 350].numpy()
         ax = plt.gca()
         ax.set_facecolor('whitesmoke')
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         plt.title(r'$\mathbf{x}_{i}^2(t)$ component', fontsize=12)
         plt.xlabel(r'$t$ (layers)')
-        plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        #plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        plt.plot(integration_time, y_traj, c='red', alpha=alpha, linewidth=0.75)
         ax.set_xlim([0, T])
     
     if len(save_fig):
@@ -323,9 +325,8 @@ def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, s
 ##--------------#
         
 ##--------------#
-##.. Third component in 3d
 
-def plt_z_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='third.pdf'):
+def plt_state_component(model, inputs, targets, timesteps, component, highlight_inputs=False, save_fig='first.pdf'):
 
     from matplotlib import rc
     rc("text", usetex = True)
@@ -333,31 +334,28 @@ def plt_z_component(model, inputs, targets, timesteps, highlight_inputs=False, s
     rc('font', **font)
     
     alpha = 0.75
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
+    # There is some error here..
+    #if type(targets[0, 0][0]) == float:
+    #    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    
+    #trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    ends, _, trajectories = model(inputs)
+    trajectories = np.asarray(trajectories)
 
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-    #if input_dim == 2:
-    #input_linewidths = 2 if highlight_inputs else 0
+    inputs_aug = inputs
     
     for i in range(inputs_aug.shape[0]):
-        trajectory = trajectories[:, i, :]
-        y_traj = trajectory[:, 2].numpy()
+        #trajectory = trajectories[:, i, :]
+        #trajectory = trajectories[:][i]
+        #y_traj = trajectory[:, component].numpy()
+        y_traj = [x[i][component].detach().numpy() for x in trajectories]
         ax = plt.gca()
         ax.set_facecolor('whitesmoke')
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         plt.title(r'$\mathbf{x}_{i}^3(t)$ component', fontsize=12)
         plt.xlabel(r'$t$ (layers)')
-        plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
+        plt.plot(integration_time, y_traj, c='blue', alpha=alpha, linewidth=0.75)
         ax.set_xlim([0, T])
     
     if len(save_fig):
