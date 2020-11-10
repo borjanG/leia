@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
 
-
 class ResidualBlock(nn.Module):
     """
     https://arxiv.org/pdf/1806.10909.pdf
@@ -20,7 +19,6 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         return x + 0.25*self.mlp(x)
-
 
 class ResNet(nn.Module):
     def __init__(self, data_dim, hidden_dim, num_layers, output_dim=1,
@@ -43,8 +41,16 @@ class ResNet(nn.Module):
             features = self.residual_blocks(x.view(x.size(0), -1))
         else:
             features = self.residual_blocks(x)
+        
         pred = self.linear_layer(features)
         _traj = [self.linear_layer(_) for _ in traj]
+        
+#        import pickle
+#        with open('operator.txt', 'rb') as fp:
+#            _op = pickle.load(fp)
+#        pred = features.matmul(_op[-2].t()) + _op[-1]
+#        _traj = [_.matmul(_op[-2].t())+_op[-1] for _ in traj]
+        
         if return_features:
             return features, pred
         return pred, _traj, traj

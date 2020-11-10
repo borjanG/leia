@@ -1,19 +1,12 @@
 import torch
 import torch.nn as nn
 from torchdiffeq import odeint, odeint_adjoint
-
-MAX_NUM_STEPS = 1000    #.. Maximum number of steps for ODE solver
+MAX_NUM_STEPS = 1000
 
 ##--------------#
-##.. Turnpike
-T = 5.0
-time_steps = 5
+T = 15.0
+time_steps = 30
 dt = T/time_steps
-
-##.. Not Turnpike
-#T = 81.0                
-#time_steps = int(pow(T, 1.5))
-#dt = T/pow(T, 1.5)
 ##--------------#
 
 class ODEFunc(nn.Module):
@@ -22,19 +15,20 @@ class ODEFunc(nn.Module):
     """
     def __init__(self, device, data_dim, hidden_dim, augment_dim=0, non_linearity='tanh'):
         super(ODEFunc, self).__init__()
-        ##--------------#
         self.device = device
         self.augment_dim = augment_dim
         self.data_dim = data_dim
-        self.input_dim = data_dim + augment_dim     # Les inputs de l'ODE seront (x_i, 0_augment)
+        self.input_dim = data_dim + augment_dim
         self.hidden_dim = hidden_dim
-        ##--------------#
         self.nfe = 0 
+
         ##--------------#
-        ##.. Activation functions
         if non_linearity == 'relu':
             self.non_linearity = nn.ReLU(inplace=True)
-            #self.non_linearity = nn.LeakyReLU(negative_slope=0.25, inplace=True)
+        if non_linearity == 'leakyrelu':
+            self.non_linearity = nn.LeakyReLU(negative_slope=0.25, inplace=True)
+        if non_linearity == 'sigomoid':
+            self.non_linearity = nn.Sigmoid()
         else:
             self.non_linearity = nn.Tanh()
         ##--------------#
@@ -61,12 +55,10 @@ class ODEFunc(nn.Module):
 
     def forward(self, t, x):
 
-        ##--------------#
         self.nfe += 1
         weights = self.fc2_time.weight
         biases = self.fc2_time.bias
-        ##--------------#
-        
+
         #---------------#
         ## In the case of Lin et al. '18 model
         #weights_1 = self.fc1_time.weight
@@ -74,23 +66,29 @@ class ODEFunc(nn.Module):
         #biases = self.fc1_time.bias
         #---------------#
 
-        if "cat" == "dog":
-        #if t==0:
-            return x.view(x.size(0), -1)
-            #return x
+        if t==0:
+            return x
+            ## In case of MNIST:
+            #return x.view(x.size(0), -1)
         else:
             ##--------------#
-            # My very own original model:
+            ## w(t)\sigma(x(t))+b(t)
             out = self.non_linearity(x)        
             k = int(t/dt)
             w_t = weights[k*self.hidden_dim : (k+1)*self.hidden_dim] 
             b_t = biases[k*self.hidden_dim : (k+1)*self.hidden_dim]
             out = out.matmul(w_t.t())+b_t
+            
+            ## \sigma(w(t)x(t)+b(t))
+#            k = int(t/dt)
+#            w_t = weights[k*self.hidden_dim : (k+1)*self.hidden_dim] 
+#            b_t = biases[k*self.hidden_dim : (k+1)*self.hidden_dim]
+#            out = x.matmul(w_t.t())+b_t
+#            out = self.non_linearity(out)
             ##--------------#
             
-            
             ##--------------#
-            ## a la Dupont
+            ## w1(t)\sigma(w2(t)x(t)+b2(t))+b1(t)
 #            k = int(t/dt)
 #            weights1 = self.fc1_time.weight
 #            biases1 = self.fc1_time.bias
@@ -103,9 +101,11 @@ class ODEFunc(nn.Module):
 #            out = x.matmul(w1_t.t()) + b1_t
 #            out = self.non_linearity(out)
 #            out = out.matmul(w2_t.t()) + b2_t
-#            out = self.non_linearity(out)
+            #out = self.non_linearity(out)
             ##--------------#
             
+            ##--------------#
+            ##Lin et al. '18 model
 #            k = int(t/dt)
 #            w_t = weights_1[k:(k+1)]  
 #            b_t = biases[k:(k+1)]
@@ -183,36 +183,25 @@ class ODENet(nn.Module):
         self.data_dim = data_dim
         self.hidden_dim = hidden_dim
         self.augment_dim = augment_dim
-        
-        ## Output_dim = 1 in case of binary, = 10 in case of Mnist
-        #self.output_dim = output_dim
-        self.output_dim = 10
-        
+        self.output_dim = output_dim
         self.tol = tol
 
         odefunc = ODEFunc(device, data_dim, hidden_dim, augment_dim, non_linearity)
-
         self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.linear_layer = nn.Linear(self.odeblock.odefunc.input_dim,
                                          self.output_dim)
-
-        #### When the system evolves in hidden_dim, use this and comment the above self.linear_layer
-        #### self.linear_layer = nn.Linear(self.hidden_dim, self.output_dim)
         self.non_linearity = nn.Tanh()
 
     def forward(self, x, return_features=False):
 
         features = self.odeblock(x)
         pred = self.linear_layer(features)
-        #pred = self.non_linearity(pred)
+        pred = self.non_linearity(pred)
 
         self.traj = self.odeblock.trajectory(x, time_steps)
         self.proj_traj = self.linear_layer(self.traj)
-        #self.proj_traj = self.non_linearity(self.proj_traj)
+        self.proj_traj = self.non_linearity(self.proj_traj)
 
         if return_features:
             return features, pred
         return pred, self.proj_traj
-        
-        #return pred
-        ####return pred, self.traj

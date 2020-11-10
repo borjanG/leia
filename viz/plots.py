@@ -1,80 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn as nn
 from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.patches import FancyArrowPatch
-from mpl_toolkits.mplot3d import Axes3D, proj3d
-
 
 categorical_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-
 all_categorical_colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c',
                           '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5',
                           '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f',
                           '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5']
 
 ##--------------#
-##.. Turnpike
-T = 40.0
-time_steps = 40
+T = 15.0
+time_steps = 30
 dt = T/time_steps
-
-##.. Not Turnpike
-#T = 81.0                
-#time_steps = int(pow(T, 1.5))
-#dt = T/pow(T, 1.5)
-##--------------#
 integration_time = torch.linspace(0., T, time_steps)
-
-
 ##--------------#
-##.. ?
-def vector_field_plt(odefunc, num_points, timesteps, inputs=None, targets=None,
-                     model=None, h_min=-2., h_max=2., t_max=1., extra_traj=[],
-                     save_fig=''):
-    t, hidden, dtdt, dhdt = ode_grid(odefunc, num_points, timesteps,
-                                     h_min=h_min, h_max=h_max, t_max=t_max)
-    t_grid, h_grid = np.meshgrid(t, hidden, indexing='ij')
-    plt.quiver(t_grid, h_grid, dtdt, dhdt, width=0.004, alpha=0.6)
-
-    if inputs is not None:
-        if targets is not None:
-            color = ['tab:red' if targets[i, 0] > 0 else 'tab:blue' for i in range(len(targets))]
-        else:
-            color = 'tab:red'
-        plt.scatter(x=[0] * len(inputs), y=inputs[:, 0].numpy(), c=color, s=80)
-
-    if targets is not None:
-        color = ['tab:red' if targets[i, 0] > 0 else 'tab:blue' for i in range(len(targets))]
-        plt.scatter(x=[t_max] * len(targets), y=targets[:, 0].numpy(), c=color,
-                    s=80)
-
-    if model is not None and inputs is not None:
-        color = ['tab:red' if targets[i, 0] > 0 else 'tab:blue' for i in range(len(targets))]
-        for i in range(len(inputs)):
-            init_point = inputs[i:i+1]
-            trajectory = model.trajectory(init_point, timesteps)
-            plt.plot(t, trajectory[:, 0, 0].detach().numpy(), c=color[i],
-                     linewidth=2)
-
-    if len(extra_traj):
-        for traj, color in extra_traj:
-            num_steps = len(traj)
-            t_traj = [t_max * float(i) / (num_steps - 1) for i in range(num_steps)]
-            plt.plot(t_traj, traj, c=color, linestyle='--', linewidth=2)
-            plt.scatter(x=t_traj[1:], y=traj[1:], c=color, s=20)
-
-    plt.xlabel("t")
-    plt.ylabel("h(t)")
-
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-##--------------#
-
-##--------------#
-##.. ?
 
 def single_feature_plt(features, targets, save_fig=''):
     alpha = 0.9
@@ -103,8 +44,6 @@ def single_feature_plt(features, targets, save_fig=''):
 ##--------------#
 
 ##--------------#
-##.. ?
-
 def multi_feature_plt(features, targets, save_fig=''):
     alpha = 0.5
     color = ['tab:red' if targets[i, 0] > 0.0 else 'tab:blue' for i in range(len(targets))]
@@ -141,191 +80,6 @@ def multi_feature_plt(features, targets, save_fig=''):
 ##--------------#
 
 ##--------------#
-##.. Plot of the trajectory?
-
-def trajectory_plt(model, inputs, targets, timesteps, highlight_inputs=False,
-                   include_arrow=False, save_fig=''):
-    alpha = 1
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-    if input_dim == 2:
-        input_linewidths = 2 if highlight_inputs else 0
-        plt.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(), c=color,
-                    alpha=alpha, linewidths=input_linewidths, edgecolor='orange')
-        plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
-                    alpha=alpha, linewidths=0)
-
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            x_traj = trajectory[:, 0].numpy()
-            y_traj = trajectory[:, 1].numpy()
-            plt.plot(x_traj, y_traj, c=color[i], alpha=alpha)
-            if include_arrow:
-                arrow_start = x_traj[-2], y_traj[-2]
-                arrow_end = x_traj[-1], y_traj[-1]
-                plt.arrow(arrow_start[0], arrow_start[1],
-                          arrow_end[0] - arrow_start[0],
-                          arrow_end[1] - arrow_start[1], shape='full', lw=0,
-                          length_includes_head=True, head_width=0.15,
-                          color=color[i], alpha=alpha)
-
-        ax = plt.gca()
-    elif input_dim == 3:
-        # Create figure
-        fig = plt.figure()
-        ax = Axes3D(fig)
-
-        input_linewidths = 1 if highlight_inputs else 0
-        ax.scatter(inputs_aug[:, 0].numpy(), inputs_aug[:, 1].numpy(),
-                   inputs_aug[:, 2].numpy(), c=color, alpha=alpha,
-                   linewidths=input_linewidths, edgecolor='orange')
-        ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(),
-                   features[:, 2].numpy(), c=color, alpha=alpha, linewidths=0)
-
-        for i in range(inputs_aug.shape[0]):
-            trajectory = trajectories[:, i, :]
-            x_traj = trajectory[:, 0].numpy()
-            y_traj = trajectory[:, 1].numpy()
-            z_traj = trajectory[:, 2].numpy()
-            ax.plot(x_traj, y_traj, z_traj, c=color[i], alpha=alpha)
-
-            if include_arrow:
-                arrow_start = x_traj[-2], y_traj[-2], z_traj[-2]
-                arrow_end = x_traj[-1], y_traj[-1], z_traj[-1]
-
-                arrow = Arrow3D([arrow_start[0], arrow_end[0]],
-                                [arrow_start[1], arrow_end[1]],
-                                [arrow_start[2], arrow_end[2]],
-                                mutation_scale=15,
-                                lw=0, color=color[i], alpha=alpha)
-                ax.add_artist(arrow)
-
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_zticks([])
-    else:
-        raise RuntimeError("Input dimension must be 2 or 3 but was {}".format(input_dim))
-
-    ax.set_aspect(get_square_aspect_ratio(ax))
-
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-##--------------#
-
-##--------------#
-##.. First component in 1d
-
-def plt_x_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='first.pdf'):
-    
-    #integration_time_subset = integration_time[0:timesteps] #################### addition here
-    
-    from matplotlib import rc
-    rc("text", usetex = True)
-    font = {'size'   : 18}
-    rc('font', **font)
-    
-    alpha = 0.75
-    #color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
-    #trajectories = model.odeblock.trajectory(inputs, time_steps).detach()################# change here
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    #features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    input_dim = model.data_dim + model.augment_dim
-
-#    if input_dim == 2:
-#        input_linewidths = 2 if highlight_inputs else 0
-        
-    for i in range(inputs_aug.shape[0]):
-        trajectory = trajectories[:, i, :]
-        ax = plt.gca()
-        ax.set_facecolor('whitesmoke')
-        #trajectory = trajectories[0:timesteps, i, :] #################### change here
-        x_traj = trajectory[:, 0].numpy()
-        #print(x_traj, 'here')
-        #print(integration_time, 'ici')
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
-        plt.title(r'$\mathbf{x}_{i}^1(t)$ component', fontsize=12)
-        plt.xlabel(r'$t$ (layers)')
-        #plt.plot(integration_time, x_traj, c=color[i], alpha=alpha, linewidth=0.75)
-        plt.plot(integration_time, x_traj, c='blue', alpha=alpha, linewidth=0.75)
-        
-        ax.set_xlim([0, T])
-
-    ax = plt.gca()
-    #ax.set_aspect(get_square_aspect_ratio(ax))
-    
-    dpi=150
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight') 
-        #plt.savefig(save_fig, format='png', dpi=dpi, bbox_inches='tight') ####### change here
-        plt.clf()
-        plt.close()
-##--------------#
-
-##--------------#
-##.. Second component in 2d
-        
-def plt_y_component(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='second.pdf'):
-
-    from matplotlib import rc
-    rc("text", usetex = True)
-    font = {'size'   : 18}
-    rc('font', **font)
-    
-    alpha = 0.75
-    # In the case of binary classification..? 
-    #color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
-    #if input_dim == 2:
-    #input_linewidths = 2 if highlight_inputs else 0
-    
-    for i in range(inputs_aug.shape[0]):
-        trajectory = trajectories[:, i, :]
-        y_traj = trajectory[:, 350].numpy()
-        ax = plt.gca()
-        ax.set_facecolor('whitesmoke')
-        plt.rc('text', usetex=True)
-        plt.rc('font', family='serif')
-        plt.title(r'$\mathbf{x}_{i}^2(t)$ component', fontsize=12)
-        plt.xlabel(r'$t$ (layers)')
-        #plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
-        plt.plot(integration_time, y_traj, c='red', alpha=alpha, linewidth=0.75)
-        ax.set_xlim([0, T])
-    
-    if len(save_fig):
-        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-        plt.clf()
-        plt.close()
-##--------------#
-        
-##--------------#
-
 def plt_state_component(model, inputs, targets, timesteps, component, highlight_inputs=False, save_fig='first.pdf'):
 
     from matplotlib import rc
@@ -334,29 +88,42 @@ def plt_state_component(model, inputs, targets, timesteps, component, highlight_
     rc('font', **font)
     
     alpha = 0.75
-    # There is some error here..
-    #if type(targets[0, 0][0]) == float:
-    #    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+
+    if hasattr(self.model, 'num_layers'):
+        #ends, trajectories = model(inputs)
+        #trajectories = trajectories.detach()
     
-    #trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    ends, _, trajectories = model(inputs)
-    trajectories = np.asarray(trajectories)
+        ## ResNet (MNIST):
+        ends, _, trajectories = model(inputs)
+        trajectories = np.asarray(trajectories)
+        #color = ..
+    else:
+    ## nODE (spheres):
+        color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+        trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    
 
     inputs_aug = inputs
     
     for i in range(inputs_aug.shape[0]):
-        #trajectory = trajectories[:, i, :]
-        #trajectory = trajectories[:][i]
-        #y_traj = trajectory[:, component].numpy()
-        y_traj = [x[i][component].detach().numpy() for x in trajectories]
+        ## ResNet:
+        #y_traj = [x[i][component].detach().numpy() for x in trajectories]
+        ## nODE:
+        trajectory = trajectories[:, i, :]
+        y_traj = trajectory[:, component].numpy()
+
         ax = plt.gca()
         ax.set_facecolor('whitesmoke')
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
-        plt.title(r'$\mathbf{x}_{i}^3(t)$ component', fontsize=12)
+        plt.title(r'Component of $\mathbf{x}_{i}(t)$', fontsize=12)
+        #plt.title(r'$\tanh(P\mathbf{x}_{i}(t))$', fontsize=12)
         plt.xlabel(r'$t$ (layers)')
-        plt.plot(integration_time, y_traj, c='blue', alpha=alpha, linewidth=0.75)
+        #plt.plot(integration_time, y_traj, c='blue', alpha=alpha, linewidth=0.75)
+        plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
         ax.set_xlim([0, T])
+        plt.rc('grid', linestyle="dotted", color='lightgray')
+        ax.grid('on')
     
     if len(save_fig):
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
@@ -364,54 +131,60 @@ def plt_state_component(model, inputs, targets, timesteps, component, highlight_
         plt.close()
 ##--------------#
 
-# ##--------------#
-# ##.. The norm of x(t)
+##--------------#
+##.. The norm of x(t)
+def plt_norm_state(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='norm_state.pdf'):
 
-# def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='norm.pdf'):
-
-#     from matplotlib import rc
-#     rc("text", usetex = True)
-#     font = {'size'   : 18}
-#     rc('font', **font)
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
     
-#     alpha = 0.75
-#     color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
-#     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-#     features = trajectories[-1]
-
-#     if model.augment_dim > 0:
-#         aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-#         inputs_aug = torch.cat([inputs, aug], 1)
-#     else:
-#         inputs_aug = inputs
-
-#     input_dim = model.data_dim + model.augment_dim
-
-#     if input_dim == 2:
-#         input_linewidths = 2 if highlight_inputs else 0
-#         x_norm = [np.linalg.norm(trajectories[k, :, : ], ord = 'fro') for k in range(timesteps)]
-        
-#         ax = plt.gca()
-#         ax.set_facecolor('whitesmoke')
-#         plt.rc('text', usetex=True)
-#         plt.rc('font', family='serif')
-#         #plt.title(r'$t\mapsto|\mathbf{x}(t)|^2$')
-#         plt.title(r'$t\mapsto|u(t)|^2$')
-#         plt.xlabel(r'$t$ (layers)')
-#         #plt.ylabel(r'$|\mathbf{x}(t)|^2$')
-#         plt.ylabel(r'$|u(t)|^2$')
-#         plt.plot(integration_time, x_norm, c='blue', alpha=alpha, linewidth=2)
-#         ax.set_xlim([0, 20])
+    alpha = 0.9
+    ## ResNet:
+    #ends, _, traj = model(inputs)
+    #traj = np.asarray(traj)
+    #_ = np.asarray(_)
+    #traj -> (40, 256, 784)
+    #x_norm = [torch.norm(traj[k]) for k in range(timesteps)]
+    #x_proj_norm = [torch.norm(_[k]) for k in range(timesteps)]
     
-#     if len(save_fig):
-#         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
-#         plt.clf()
-#         plt.close()  
-# ##--------------# 
+    ##nODE:
+    ends, _ = model(inputs)
+    _ = _.detach()
+    
+    ## ResNet:
+    #loss = nn.CrossEntropyLoss()
+    ## nODE:
+    loss = nn.MSELoss()
+    error = [loss(_[k], targets) for k in range(timesteps)]
+
+    ax = plt.gca()
+    ax.set_facecolor('whitesmoke')
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.title(r'Decay of training error', fontsize=12)
+    plt.xlabel(r'$t$ (layers)')
+    #plt.ylabel(r'$|\mathbf{x}(t)|^2$')
+    
+    #plt.plot(integration_time, x_norm, c='crimson', alpha=alpha, linewidth=3, label=r'$|\mathbf{x}(t)|^2$')
+    #plt.plot(integration_time, x_proj_norm, c='navy', alpha=alpha, linewidth=3, label=r'$|P\mathbf{x}(t)|^2$')
+    
+    # The training error
+    plt.plot(integration_time, error, c='crimson', alpha=alpha, linewidth=2.25, label=r'$\phi(\mathbf{x}(t))$')
+    ax.legend(prop={'size': 10}, fancybox=True, framealpha=0.2)
+    ax.set_xlim([0, int(T)])
+    plt.rc('grid', linestyle="dotted", color='lightgray')
+    ax.grid('on')
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()  
+##-------------# 
 
 ##--------------#
 ##.. The norm of x1 and x2(t)
-
 def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=False, save_fig='norm.pdf'):
 
     from matplotlib import rc
@@ -419,48 +192,42 @@ def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=Fals
     font = {'size'   : 18}
     rc('font', **font)
     
-    alpha = 0.85
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    alpha = 0.9
     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
-    features = trajectories[-1]
-
-    if model.augment_dim > 0:
-        aug = torch.zeros(inputs.shape[0], model.odeblock.odefunc.augment_dim)
-        inputs_aug = torch.cat([inputs, aug], 1)
-    else:
-        inputs_aug = inputs
-
+    ends, _ = model(inputs)
+    _ = _.detach()
+    
     input_dim = model.data_dim + model.augment_dim
 
-    #if input_dim == 2:
-    input_linewidths = 2 if highlight_inputs else 0
-    #x_norm = [np.linalg.norm(trajectories[k, :, : ], ord = 'fro') for k in range(timesteps)]
-    x_norm_0 = [np.linalg.norm(trajectories[k, :, 0]) for k in range(timesteps)]
-    x_norm_1 = [np.linalg.norm(trajectories[k, :, 1]) for k in range(timesteps)]
+    x_norm = [np.linalg.norm(trajectories[k, :, :], ord = 'fro') for k in range(timesteps)]
+    _norm = [np.linalg.norm(_[k, :], ord = 'fro') for k in range(timesteps)]
+    #x_norm_0 = [np.linalg.norm(trajectories[k, :, 0]) for k in range(timesteps)]
+    #x_norm_1 = [np.linalg.norm(trajectories[k, :, 1]) for k in range(timesteps)]
 
 
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
-    #plt.title(r'$t\mapsto|\mathbf{x}(t)|^2$')
+    plt.title('Stability of norms', fontsize=12)
     #plt.title(r'$t\mapsto|\mathbf{x}^j(t)|^2$')
     plt.xlabel(r'$t$ (layers)')
     #plt.ylabel(r'$|\mathbf{x}(t)|^2$')
     #plt.ylabel(r'$|x^j(t)|^2$')
     #plt.plot(integration_time, x_norm, c='blue', alpha=alpha, linewidth=2)
-    plt.plot(integration_time, x_norm_0, c='darkorange', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^1(t)|^2$')
-    plt.plot(integration_time, x_norm_1, c='seagreen', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^2(t)|^2$')
-    if input_dim == 3:
-        x_norm_2 = [np.linalg.norm(trajectories[k, :, 2]) for k in range(timesteps)]
-        plt.plot(integration_time, x_norm_2, c='blue', alpha=alpha, linewidth=2.5, label=r'$|\mathbf{x}^3(t)|^2$')
-    #plt.axvspan(10, 20, facecolor='0.1', alpha=0.05)
-    #ax.legend()
-    #ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
-    #  fancybox=True, shadow=True, ncol=5)
+    plt.plot(integration_time, x_norm, c='cornflowerblue', alpha=alpha, linewidth=2.25, label=r'$|\mathbf{x}(t)|^2$')
+    plt.plot(integration_time, _norm, c='darkorange', alpha=alpha, linewidth=2.25, label=r'$|P\mathbf{x}(t)|^2$')
+    #plt.plot(integration_time, x_norm_0, c='teal', alpha=alpha, linewidth=3, label=r'$|\mathbf{x}^1(t)|^2$')
+    #plt.plot(integration_time, x_norm_1, c='darkorange', alpha=alpha, linewidth=3, label=r'$|\mathbf{x}^2(t)|^2$')
+    #if input_dim == 3:
+    #    x_norm_2 = [np.linalg.norm(trajectories[k, :, 2]) for k in range(timesteps)]
+    #    plt.plot(integration_time, x_norm_2, c='seagreen', alpha=alpha, linewidth=2, label=r'$|\mathbf{x}^3(t)|^2$')
     ax.legend(prop={'size': 10}, fancybox=True, framealpha=0.2)
-    plt.title(r'Norms of $\mathbf{x}(t)=\{\mathbf{x}^j(t)\}_{j=1}^d$', fontsize=12)
+    #plt.title(r'Norms of components of $\mathbf{x}(t)$', fontsize=12)
+    #plt.title(r'Norms of $\mathbf{x}(t)$ and $P\mathbf{x}(t)$', fontsize=12)
     ax.set_xlim([0, T])
+    plt.rc('grid', linestyle="dotted", color='lightgray')
+    ax.grid('on')
 
     if len(save_fig):
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
@@ -468,9 +235,7 @@ def plt_norm_components(model, inputs, targets, timesteps, highlight_inputs=Fals
         plt.close()  
 ##--------------# 
 
-
 ##--------------#
-##.. Plotting the inferred function?
 def input_space_plt(model, plot_range=(-2., 2.), num_steps=201, save_fig='generalization.pdf'):
 
     grid = torch.zeros((num_steps * num_steps, 2))
@@ -484,10 +249,16 @@ def input_space_plt(model, plot_range=(-2., 2.), num_steps=201, save_fig='genera
     pred_grid = predictions.view(num_steps, num_steps).detach()
 
     colors = [(1, 1, 1), (0, 0, 1), (0.5, 0, 0.5), (1, 0, 0), (1, 1, 1)]
-    colormap = LinearSegmentedColormap.from_list('cmap_red_blue', colors, N=300)
+    colormap = LinearSegmentedColormap.from_list('cmap_red_blue', colors, N=256, gamma=1)
+
+    #x = np.linspace(-2., 2., 201)
+    #y = np.linspace(-2., 2., 201)
+    #X, Y = np.meshgrid(x, y)
 
     # Plot input space as a heatmap
-    plt.imshow(pred_grid, vmin=-2., vmax=2., cmap=colormap, alpha=0.75)
+    #plt.imshow(pred_grid, vmin=-2., vmax=2., cmap=colormap, alpha=0.75)
+    plt.imshow(pred_grid, vmin=-1.1, vmax=1.1, cmap='seismic', alpha=1)
+    #plt.contourf(X, Y, pred_grid, 25, cmap=colormap)
     plt.colorbar()
     plt.tick_params(axis='both', which='both', bottom=False, top=False,
                         labelbottom=False, right=False, left=False,
@@ -500,8 +271,6 @@ def input_space_plt(model, plot_range=(-2., 2.), num_steps=201, save_fig='genera
 ##--------------#
 
 ##--------------#
-##.. Error plots
-
 def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
                   labels=[], include_mean=True, nfe_type='nfe',
                   time_per_epoch=[], save_fig=''):
@@ -592,34 +361,8 @@ def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
         plt.clf()
         plt.close()
-##--------------#
 
 ##--------------#
-class Arrow3D(FancyArrowPatch):
-    def __init__(self, xs, ys, zs, *args, **kwargs):
-        FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
-        self._verts3d = xs, ys, zs
-
-    def draw(self, renderer):
-        xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
-
-
-def ode_grid(odefunc, num_points, timesteps, h_min=-2., h_max=2., t_max=1.):
-    
-    t = np.linspace(0., t_max, timesteps)
-    hidden = np.linspace(h_min, h_max, num_points)
-    dtdt = np.ones((timesteps, num_points)) 
-    dhdt = np.zeros((timesteps, num_points))
-    for i in range(len(t)):
-        for j in range(len(hidden)):
-            h_j = torch.Tensor([hidden[j]]).unsqueeze(0)
-            dhdt[i, j] = odefunc(t[i], h_j)
-    return t, hidden, dtdt, dhdt
-
-
 def get_feature_history(trainer, dataloader, inputs, targets, num_epochs):
     
     feature_history = []

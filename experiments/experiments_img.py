@@ -55,7 +55,6 @@ def run_and_save_experiments_img(device, path_to_config):
 
     if dataset == 'mnist':
         data_loader, test_loader = mnist(256)
-        img_size = (1, 28, 28)
         output_dim = 10
 
     only_success = True  # Boolean to keep track of any experiments failing
@@ -89,24 +88,11 @@ def run_and_save_experiments_img(device, path_to_config):
         for j in range(num_reps):
             print("{}/{} model, {}/{} rep".format(i + 1, len(model_configs), j + 1, num_reps))
 
-            if is_ode:
-                if model_config["type"] == "odenet":
-                    augment_dim = 0
-                else:
-                    augment_dim = model_config["augment_dim"]
-
-                model = ConvODENet(device, img_size, model_config["num_filters"],
-                                   output_dim=output_dim,
-                                   augment_dim=augment_dim,
-                                   time_dependent=model_config["time_dependent"],
-                                   non_linearity=model_config["non_linearity"],
-                                   adjoint=True)
-            else:
-                model = ResNet(data_dim, model_config["hidden_dim"],
+            model = ResNet(pow(28,2), model_config["hidden_dim"],
                                model_config["num_layers"],
                                output_dim=output_dim,
                                is_img=True)
-
+                
             model.to(device)
 
             optimizer = torch.optim.Adam(model.parameters(),
@@ -279,7 +265,7 @@ def dataset_mean_loss(trainer, data_loader, device):
     for x_batch, y_batch in data_loader:
         x_batch = x_batch.to(device)
         y_batch = y_batch.to(device)
-        y_pred = trainer.model(x_batch)
-        loss = trainer._loss(y_pred, y_batch)
+        y_pred, _, __ = trainer.model(x_batch)
+        loss = trainer.loss_func(y_pred, y_batch)
         epoch_loss += loss.item()
     return epoch_loss / len(data_loader)

@@ -2,19 +2,12 @@ import imageio
 import os
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-from viz.plots import get_square_aspect_ratio
 import matplotlib.pyplot as plt
 
 ##--------------#
-##.. Turnpike
-T = 20.0
-time_steps = 20
+T = 15.0
+time_steps = 30
 dt = T/time_steps
-
-##.. Not Turnpike
-#T = 81.0                
-#time_steps = int(pow(T, 1.5))
-#dt = T/pow(T, 1.5)
 ##--------------#
 
 ##--------------#
@@ -25,17 +18,21 @@ def feature_evolution_gif(feature_history, targets, dpi=150, alpha=0.9,
         raise RuntimeError("Filename must end in with .gif, but filename is {}".format(filename))
     base_filename = filename[:-4]
 
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    color = ['crimson' if targets[i, 0] > 0.0 else 'navy' for i in range(len(targets))]
     num_dims = feature_history[0].shape[1]
 
     for i, features in enumerate(feature_history):
         if num_dims == 2:
             ax = plt.gca()
             ax.set_facecolor('whitesmoke')
+            plt.rc('grid', linestyle="dotted", color='lightgray')
+            ax.grid('on')
             plt.rc('text', usetex=True)
             plt.rc('font', family='serif')
-            plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$')
-            plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$')
+            plt.xlabel('first component', fontsize=12)
+            plt.ylabel('second component', fontsize=12)
+            #plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$')
+            #plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$')
             #plt.title(r'$T=${}'.format(str(T)))
             plt.scatter(features[:, 0].numpy(), features[:, 1].numpy(), c=color,
                         alpha=alpha, marker = 'o', linewidths=0)
@@ -45,19 +42,17 @@ def feature_evolution_gif(feature_history, targets, dpi=150, alpha=0.9,
             ax = Axes3D(fig)
             plt.rc('text', usetex=True)
             plt.rc('font', family='serif')
-            plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$', fontsize=10)
-            plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$', fontsize=10)
+            #plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$', fontsize=10)
+            #plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$', fontsize=10)
             #plt.ylabel(r'$\mathbf{x}_{i, 3}(t)$')
             #plt.title(r'$T=${}'.format(str(T)))
-            
-            #ax.set_xticks([])
-            #ax.set_yticks([])
-            #ax.set_zticks([])
 
             ax.scatter(features[:, 0].numpy(), features[:, 1].numpy(), features[:, 1].numpy(),
                        c=color, alpha=alpha, marker = 'o', linewidths=0)
             
-            ax.grid(b=False)
+            #ax.grid(b=False)
+            plt.rc('grid', linestyle="dotted", color='lightgray')
+            ax.grid('on')
             plt.locator_params(nbins=4)
 
         plt.savefig(base_filename + "{}.png".format(i),
@@ -89,7 +84,7 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=150, alpha=1,
         raise RuntimeError("Filename must end in with .gif, but filename is {}".format(filename))
     base_filename = filename[:-4]
 
-    color = ['red' if targets[i, 0] > 0.0 else 'blue' for i in range(len(targets))]
+    color = ['crimson' if targets[i, 0] > 0.0 else 'navy' for i in range(len(targets))]
 
     trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
     num_dims = trajectories.shape[2]
@@ -110,21 +105,23 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=150, alpha=1,
         z_min -= margin * z_range
         z_max += margin * z_range
 
+    plt.rc('grid', linestyle="dotted", color='lightgray')
     for t in range(timesteps):
         if num_dims == 2:
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1)
+            ax.grid('on')
             ax.set_facecolor('whitesmoke')
             plt.scatter(trajectories[t, :, 0].numpy(), trajectories[t, :, 1].numpy(), c=color,
                         alpha=alpha, marker = 'o', linewidths=0)
-
             plt.xlim(x_min, x_max)
             plt.ylim(y_min, y_max)
             plt.rc('text', usetex=True)
             plt.rc('font', family='serif')
-            plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$')
-            plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$')
-            #plt.title(r'$T=${}'.format(str(T)))
+            plt.xlabel('first component', fontsize=12)
+            plt.ylabel('second component', fontsize=12)
+            #plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$')
+            #plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$')
 
             if t > 0:
                 for i in range(inputs.shape[0]):
@@ -143,8 +140,8 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=150, alpha=1,
                        c=color, alpha=alpha, marker = 'o', linewidths=0)
             plt.rc('text', usetex=True)
             plt.rc('font', family='serif')
-            plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$', fontsize=10)
-            plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$', fontsize=10)
+            #plt.xlabel(r'$\mathbf{x}_{i, 1}(t)$', fontsize=10)
+            #plt.ylabel(r'$\mathbf{x}_{i, 2}(t)$', fontsize=10)
             #plt.zlabel(r'$\mathbf{x}_{i, 3}(t)$')
             #plt.title(r'$T=${}'.format(str(T)))            
             if t > 0:
@@ -154,16 +151,14 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=150, alpha=1,
                     y_traj = trajectory[:, 1].numpy()
                     z_traj = trajectory[:, 2].numpy()
                     ax.plot(x_traj, y_traj, z_traj, c=color[i], alpha=alpha_line, linewidth = 0.75)
-                    
-            #ax.set_xticks([])
-            #ax.set_yticks([])
-            #ax.set_zticks([])
-
+                
             ax.set_xlim3d(x_min, x_max)
             ax.set_ylim3d(y_min, y_max)
             ax.set_zlim3d(z_min, z_max)
             
-            ax.grid(b=False)
+            #ax.grid(b=False)
+            plt.rc('grid', linestyle="dotted", color='lightgray')
+            ax.grid('on')
             plt.locator_params(nbins=4)
 
         plt.savefig(base_filename + "{}.png".format(t),
@@ -180,4 +175,35 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=150, alpha=1,
         imgs.append(imageio.imread(img_file))
         os.remove(img_file) 
     imageio.mimwrite(filename, imgs)
+
 ##--------------#
+def mnist_gif(model, inputs, targets, timesteps, component, filename='mnist.gif'):
+
+    from matplotlib import rc
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    if not filename.endswith(".gif"):
+        raise RuntimeError("Filename must end in with .gif, but filename is {}".format(filename))
+    base_filename = filename[:-4]
+    
+    ends, _, traj = model(inputs)
+    _ = np.asarray(_)
+
+    
+    ax = plt.gca()
+    ax.set_facecolor('whitesmoke')
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    
+    for k in range(timesteps):
+        plt.imsave('mnist{}.png'.format(k), traj[k].detach().numpy()[component].reshape(28,28), cmap='gray')
+    
+    imgs = []
+    for i in range(timesteps):
+        img_file = base_filename + "{}.png".format(i)
+        imgs.append(imageio.imread(img_file))
+        #os.remove(img_file) 
+    imageio.mimwrite(filename, imgs)
+##-------------# 
