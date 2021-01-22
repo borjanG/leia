@@ -3,12 +3,11 @@ import imageio
 import numpy as np
 import torch
 from math import pi
+import random as rand
 from random import random
-#import random
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions import Normal
 from torchvision import datasets, transforms
-
 
 class Data1D(Dataset):
     def __init__(self, num_points, target_flip=False, noise_scale=0.0):
@@ -61,12 +60,18 @@ class ConcentricSphere(Dataset):
             self.data.append(
                 random_point_in_sphere(dim, inner_range[0], inner_range[1])
             )
+            #__ = torch.tensor(0)
+            #__ = __.type(torch.long)
+            #self.targets.append(__)
             self.targets.append(torch.Tensor([-1]))
 
         for _ in range(self.num_points_outer):
             self.data.append(
                 random_point_in_sphere(dim, outer_range[0], outer_range[1])
             )
+            #__ = torch.tensor(1)
+            #__ = __.type(torch.long)
+            #self.targets.append(__)
             self.targets.append(torch.Tensor([1]))
 
     def __getitem__(self, index):
@@ -75,28 +80,29 @@ class ConcentricSphere(Dataset):
     def __len__(self):
         return len(self.data)
     
-class Mnist1d(Dataset):
-    def __init__(self):
-    
+
+class Chess(Dataset):
+    def __init__(self, num_points):
+        self.num_points = num_points
+
         self.data = []
         self.targets = []
-        
-        data_loader, test_loader = mnist(batch_size=256, size=28)
 
-        for _inputs, targets in data_loader:
-            break
+        for _ in range(self.num_points//4):
+            self.data.append(random_point_in_square(-1.4, -1.4, -0.1, -0.1))
+            self.targets.append(torch.Tensor([-1]))
 
-        inputs = torch.zeros(256, pow(28, 2))
-        for i, x in enumerate(_inputs):
-            inputs[i] = x.reshape(-1)
+        for _ in range(self.num_points//4):
+            self.data.append(random_point_in_square(0.1, 0.1, 1.4, 1.4))
+            self.targets.append(torch.Tensor([-1]))
 
-        for _ in range(256):
-            self.data.append(inputs[_])
-            self.targets.append(targets[_])
-            #if targets[_]>5:
-            #    self.targets.append(torch.Tensor([1]))
-            #else:
-            #    self.targets.append(torch.Tensor([-1]))
+        for _ in range(self.num_points//4):
+            self.data.append(random_point_in_square(-1.4, 0.1, -0.1, 1.4))
+            self.targets.append(torch.Tensor([1]))
+
+        for _ in range(self.num_points//4):
+            self.data.append(random_point_in_square(0.1, -1.4, 1.4, -0.1))
+            self.targets.append(torch.Tensor([1]))
 
     def __getitem__(self, index):
         return self.data[index], self.targets[index]
@@ -105,47 +111,8 @@ class Mnist1d(Dataset):
         return len(self.data)
 
 
-class ShiftedSines(Dataset):
-    def __init__(self, dim, shift, num_points_upper, num_points_lower,
-                 noise_scale):
-        self.dim = dim
-        self.shift = shift
-        self.num_points_upper = num_points_upper
-        self.num_points_lower = num_points_lower
-        self.noise_scale = noise_scale
-
-        noise = Normal(loc=0., scale=self.noise_scale)
-
-        self.data = []
-        self.targets = []
-
-        for i in range(self.num_points_upper + self.num_points_lower):
-            if i < self.num_points_upper:
-                label = 1
-                y_shift = shift / 2.
-            else:
-                label = -1
-                y_shift = - shift / 2.
-
-            x = 2 * torch.rand(1) - 1 
-            y = torch.sin(pi * x) + noise.sample() + y_shift
-
-            if self.dim == 1:
-                self.data.append(torch.Tensor([y]))
-            elif self.dim == 2:
-                self.data.append(torch.cat([x, y]))
-            else:
-                random_higher_dims = 2 * torch.rand(self.dim - 2) - 1
-                self.data.append(torch.cat([x, y, random_higher_dims]))
-
-            self.targets.append(torch.Tensor([label]))
-
-    def __getitem__(self, index):
-        return self.data[index], self.targets[index]
-
-    def __len__(self):
-        return len(self.data)
-
+def random_point_in_square(x1, y1, x2, y2):
+    return torch.tensor([rand.uniform(x1, x2), rand.uniform(y1, y2)])
 
 def random_point_in_sphere(dim, min_radius, max_radius):
     
@@ -155,36 +122,51 @@ def random_point_in_sphere(dim, min_radius, max_radius):
     unit_direction = direction / torch.norm(direction, 2)
     return distance * unit_direction
 
-class Checkers(Dataset):
-    def __init__(self, num_points_upper, num_points_lower):
-        
-        self.num_points_upper = num_points_upper
-        self.num_points_lower = num_points_lower
+class Tricolor(Dataset):
+    def __init__(self, num_points_b, num_points_g, num_points_r):
+
+        self.num_points_b = num_points_b
+        self.num_points_g = num_points_g
+        self.num_points_r = num_points_r
+
         self.data = []
         self.targets = []
 
-        for i in range(self.num_points_upper + self.num_points_lower):
-            if i < self.num_points_upper/4:
-                label = 1
-                y = 0.5 * torch.rand(1) - 1  # Random point between -1 and 1
-            elif self.num_points_upper/4 <= i < self.num_points_upper/2:
-                label = -1
-                y = 0.5 * torch.rand(1) - 0.5
-            elif self.num_points_upper/2 <= i < 3*self.num_points_upper/4:
-                label = 1
-                y = 0.5 * torch.rand(1) 
-            else:
-                label = -1
-                y = 0.5 * torch.rand(1) + 0.5
-                
-            self.data.append(torch.Tensor([y]))
-            self.targets.append(torch.Tensor([label]))
-        
+        # Generate data for inner sphere
+        for _ in range(self.num_points_b):
+            self.data.append(
+                random_point_in_sphere(2, 0.0, 0.5)
+            )
+            __ = torch.tensor(0)
+            __ = __.type(torch.long)
+            self.targets.append(__)
+            #self.targets.append(torch.Tensor([-1]))
+
+        for _ in range(self.num_points_r):
+            self.data.append(
+                random_point_in_sphere(2, 0.75, 1.25)
+            )
+            __ = torch.tensor(1)
+            __ = __.type(torch.long)
+            self.targets.append(__)
+            #self.targets.append(torch.Tensor([1]))
+
+        for _ in range(self.num_points_g):
+            self.data.append(
+                random_point_in_sphere(2, 1.5, 2.0)
+            )
+            __ = torch.tensor(2)
+            __ = __.type(torch.long)
+            self.targets.append(__)
+            #self.targets.append(torch.Tensor([1,0]))
+
     def __getitem__(self, index):
         return self.data[index], self.targets[index]
 
     def __len__(self):
         return len(self.data)
+
+
 
 def dataset_to_numpy(dataset):
     num_points = len(dataset)
@@ -212,63 +194,3 @@ def mnist(batch_size=64, size=28, path_to_data='../../mnist_data'):
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
     return train_loader, test_loader
-
-
-def cifar10(batch_size=64, size=32, path_to_data='../../cifar10_data'):
-    
-    all_transforms = transforms.Compose([
-        transforms.Resize(size),
-        transforms.ToTensor()
-    ])
-
-    train_data = datasets.CIFAR10(path_to_data, train=True, download=True,
-                                  transform=all_transforms)
-    test_data = datasets.CIFAR10(path_to_data, train=False,
-                                 transform=all_transforms)
-
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
-
-    return train_loader, test_loader
-
-
-def tiny_imagenet(batch_size=64, path_to_data='../../tiny-imagenet-200/'):
-    
-    imagenet_data = TinyImageNet(root_folder=path_to_data,
-                                 transform=transforms.ToTensor())
-    imagenet_loader = DataLoader(imagenet_data, batch_size=batch_size,
-                                 shuffle=True)
-    return imagenet_loader
-
-
-class TinyImageNet(Dataset):
-    
-    def __init__(self, root_folder='../../tiny-imagenet-200/', transform=None):
-        self.root_folder = root_folder
-        self.transform = transform
-        self.imgs_and_classes = [] 
-
-        train_folder = root_folder + 'train/'
-        class_folders = glob.glob(train_folder + '*')
-
-        for i, class_folder in enumerate(class_folders):
-            image_paths = glob.glob(class_folder + '/images/*.JPEG')
-            for image_path in image_paths:
-                self.imgs_and_classes.append((image_path, i))
-
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.imgs_and_classes)
-
-    def __getitem__(self, idx):
-        img_path, label = self.imgs_and_classes[idx]
-        img = imageio.imread(img_path)
-
-        if self.transform:
-            img = self.transform(img)
-
-        if img.shape[0] == 1:
-            img = img.repeat(3, 1, 1)
-
-        return img, label

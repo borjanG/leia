@@ -5,7 +5,7 @@ MAX_NUM_STEPS = 1000
 
 ##--------------#
 T = 15.0
-time_steps = 30
+time_steps = 15
 dt = T/time_steps
 ##--------------#
 
@@ -27,7 +27,7 @@ class ODEFunc(nn.Module):
             self.non_linearity = nn.ReLU(inplace=True)
         if non_linearity == 'leakyrelu':
             self.non_linearity = nn.LeakyReLU(negative_slope=0.25, inplace=True)
-        if non_linearity == 'sigomoid':
+        if non_linearity == 'sigmoid':
             self.non_linearity = nn.Sigmoid()
         else:
             self.non_linearity = nn.Tanh()
@@ -42,13 +42,13 @@ class ODEFunc(nn.Module):
 
         ##--------------#
         ##.. Time-dependent controls
-        ##.. Recall that x = nn.Linear(n, m) provides an array x.weight
-        ##.. which has m rows and n columns.
         ##.. R^{d_aug} -> R^{d_hid} layer 
-        #self.fc1_time = nn.Linear(self.input_dim, time_steps)
         #self.fc1_time = nn.Linear(self.input_dim, hidden_dim*time_steps)
         ##.. R^{d_hid} -> R^{d_hid} layer
-        self.fc2_time = nn.Linear(hidden_dim, hidden_dim*time_steps)
+        blocks = [nn.Linear(hidden_dim, hidden_dim) for _ in range(time_steps)]
+        self.fc2_time = nn.Sequential(*blocks)
+        
+        #self.fc2_time = nn.Linear(hidden_dim, hidden_dim*time_steps)
         ##.. R^{d_hid} -> R^{d_aug} layer
         #self.fc3_time = nn.Linear(hidden_dim, self.input_dim*time_steps)
         ##--------------#
@@ -56,8 +56,12 @@ class ODEFunc(nn.Module):
     def forward(self, t, x):
 
         self.nfe += 1
-        weights = self.fc2_time.weight
-        biases = self.fc2_time.bias
+        k = int(t/dt)
+        
+        #weights = self.fc2_time.weight
+        #biases = self.fc2_time.bias
+        w_t = self.fc2_time[k].weight
+        b_t = self.fc2_time[k].bias
 
         #---------------#
         ## In the case of Lin et al. '18 model
@@ -67,7 +71,7 @@ class ODEFunc(nn.Module):
         #---------------#
 
         if t==0:
-            return x
+            out = x
             ## In case of MNIST:
             #return x.view(x.size(0), -1)
         else:
@@ -75,8 +79,8 @@ class ODEFunc(nn.Module):
             ## w(t)\sigma(x(t))+b(t)
             out = self.non_linearity(x)        
             k = int(t/dt)
-            w_t = weights[k*self.hidden_dim : (k+1)*self.hidden_dim] 
-            b_t = biases[k*self.hidden_dim : (k+1)*self.hidden_dim]
+            #w_t = weights[k*self.hidden_dim : (k+1)*self.hidden_dim] 
+            #b_t = biases[k*self.hidden_dim : (k+1)*self.hidden_dim]
             out = out.matmul(w_t.t())+b_t
             
             ## \sigma(w(t)x(t)+b(t))
@@ -149,20 +153,8 @@ class ODEBlock(nn.Module):
             x_aug = x
 
         if self.adjoint:
-            ##--------------#
-            ##.. Adaptive scheme
-            # out = odeint_adjoint(self.odefunc, x_aug, integration_time,
-            #                      rtol=self.tol, atol=self.tol, method='dopri5',
-            #                      options={'max_num_steps': MAX_NUM_STEPS})
-            ##--------------#
             out = odeint_adjoint(self.odefunc, x_aug, integration_time, method='euler', options={'step_size': dt})
         else:
-            ##--------------#
-            ##.. Adaptive scheme
-            # out = odeint(self.odefunc, x_aug, integration_time,
-            #              rtol=self.tol, atol=self.tol, method='dopri5',
-            #              options={'max_num_steps': MAX_NUM_STEPS})
-            ##--------------#
             out = odeint(self.odefunc, x_aug, integration_time, method='euler', options={'step_size': dt})
         if eval_times is None:
             return out[1] 
@@ -179,6 +171,7 @@ class ODENet(nn.Module):
                  augment_dim=0, non_linearity='tanh',
                  tol=1e-3, adjoint=False):
         super(ODENet, self).__init__()
+        #Outputdim = 1 pour MSE, 2 pour cross entropy for binary classification..
         self.device = device
         self.data_dim = data_dim
         self.hidden_dim = hidden_dim
@@ -191,17 +184,44 @@ class ODENet(nn.Module):
         self.linear_layer = nn.Linear(self.odeblock.odefunc.input_dim,
                                          self.output_dim)
         self.non_linearity = nn.Tanh()
-
+        
     def forward(self, x, return_features=False):
 
+        turnpike = True
+        cross_entropy = False
         features = self.odeblock(x)
-        pred = self.linear_layer(features)
-        pred = self.non_linearity(pred)
-
-        self.traj = self.odeblock.trajectory(x, time_steps)
-        self.proj_traj = self.linear_layer(self.traj)
-        self.proj_traj = self.non_linearity(self.proj_traj)
-
+        if turnpike:
+            #1
+#            import pickle
+#            with open('text.txt', 'rb') as fp:
+#                projection = pickle.load(fp)
+#            print(projection[-1], 'here')
+            #pred = features.matmul(projection[-2].t())+projection[-1]
+            
+            #2
+            #pred = features.matmul(torch.tensor([[0.8156, -0.4525]]).t())+torch.tensor([3.9044])
+            
+            self.traj = self.odeblock.trajectory(x, time_steps)
+            #2
+            #self.proj_traj = self.traj.matmul(torch.tensor([[0.8156, -0.4525]]).t())+torch.tensor([3.9044])
+            #self.proj_traj = self.traj.matmul(projection[-2].t())+projection[-1]
+            
+            pred = self.linear_layer(features)
+            self.proj_traj = self.linear_layer(self.traj)
+            if not cross_entropy:
+                pred = self.non_linearity(pred)
+                self.proj_traj = self.non_linearity(self.proj_traj)
+        
+        else:
+            import pickle
+            with open('text.txt', 'rb') as fp:
+                projection = pickle.load(fp)
+            print(projection[-2], 'here')
+            print(projection[-1], 'here')
+            pred = features.matmul(projection[-2].t())+projection[-1]
+            self.traj = self.odeblock.trajectory(x, time_steps)
+            self.proj_traj = self.traj.matmul(projection[-2].t())+projection[-1]
+    
         if return_features:
             return features, pred
         return pred, self.proj_traj

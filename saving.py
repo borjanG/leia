@@ -1,26 +1,26 @@
-import torch
 import pickle
-device = torch.device('cpu')
 from experiments.dataloaders import *
+import torch
 
 data_dim = 2
-# Examples: 1500, etc.
-num_points_lower = 5
-num_points_upper = 5
-
-# 1000 vs 2000
 num_points_inner = 1000
 num_points_outer = 2000
 
 datasets = {
 			"spheres": ConcentricSphere(data_dim, inner_range=(0., .5), outer_range=(1., 1.5),
 				num_points_inner=num_points_inner, num_points_outer=num_points_outer),
-			"checkers": Checkers(num_points_lower, num_points_upper),
-			"sines": ShiftedSines(data_dim, shift=1.4, num_points_lower=1500, num_points_upper=1500, noise_scale=0.2)
+			"chess": Chess(3000),
+			"tricolor": Tricolor(500, 1000, 2000)
 }
 
 _type = "spheres"
-data_line = datasets[_type]
+#_type = "chess"
+#_type = "tricolor"
+_data_line = datasets[_type]
+train_size = int(0.8 * len(_data_line))
+test_size = len(_data_line) - train_size
+train_dataset, test_dataset = torch.utils.data.random_split(_data_line, [train_size, test_size])
 
 with open('data.txt', 'wb') as fp:
-    pickle.dump(data_line, fp)
+    #pickle.dump(data_line, fp)
+    pickle.dump((train_dataset, test_dataset), fp)
