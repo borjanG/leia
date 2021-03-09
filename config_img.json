@@ -1,0 +1,23 @@
+{
+  "id": "mnist_experiments",
+  "num_reps": 5, 
+  "dataset": "fashion_mnist",
+  "model_configs": [
+    {
+      "type": "resnet",
+      "hidden_dim": 32,
+      "num_layers": 10,
+      "augment_dim": 0,
+      "lr": 1e-3,
+      "non_linearity": "relu",
+      "weight_decay": 0.01,
+      "validation": true
+  }
+],
+  "training_config": {
+      "batch_size": 256,
+      "record_freq": 10,
+      "print_freq": 10,
+      "epochs": 5
+  }
+}
