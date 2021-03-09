@@ -1,28 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski
+@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
 """
-##------------#
 import torch.nn as nn
-import torch
 
 class ResidualBlock(nn.Module):
     """
-    https://arxiv.org/pdf/1806.10909.pdf
+    The dynamics x[k]+f(u[k],x[k]) at given (k, x[k])
     """
     def __init__(self, data_dim, hidden_dim):
         super(ResidualBlock, self).__init__()
         self.data_dim = data_dim
         self.hidden_dim = hidden_dim
-
-        # self.mlp = nn.Sequential(
-        #     nn.Linear(data_dim, hidden_dim),
-        #     nn.ReLU(),
-        #     nn.Linear(hidden_dim, data_dim),
-        #     nn.ReLU()
-        # )
-
+        
         self.mlp = nn.Sequential(
             nn.Linear(data_dim, hidden_dim),
             nn.ReLU(),
@@ -33,8 +24,12 @@ class ResidualBlock(nn.Module):
         return x + self.mlp(x)
 
 class ResNet(nn.Module):
+    """
+    Returns the discrete ResNet semiflow x\mapsto\Phi(x), where
+    \Phi might designate the full discrete state of the ResNet, or some projection thereof.
+    """
     def __init__(self, data_dim, hidden_dim, num_layers, output_dim=1,
-                 is_img=False):
+                 is_img=True):
         super(ResNet, self).__init__()
         residual_blocks = \
             [ResidualBlock(data_dim, hidden_dim) for _ in range(num_layers)]
@@ -43,10 +38,11 @@ class ResNet(nn.Module):
         self.num_layers = num_layers
         self.output_dim = output_dim
         self.is_img = is_img
+        self.cross_entropy = is_img
 
     def forward(self, x, return_features=False):
 
-        traj = list()                       
+        traj = []
         traj.append(self.residual_blocks[0](x.view(x.size(0),-1)))      # to store the states/features over layers
         if self.is_img:
             for k in range(1, self.num_layers):

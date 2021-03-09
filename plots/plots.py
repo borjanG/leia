@@ -5,39 +5,25 @@
 """
 ##------------#
 import matplotlib.pyplot as plt
+from matplotlib import rc
+from scipy.interpolate import interp1d
 import numpy as np
 import torch
 import torch.nn as nn
 from mpl_toolkits.mplot3d import Axes3D
-#from matplotlib.colors import LinearSegmentedColormap
-
-categorical_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-all_categorical_colors = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c',
-                          '#98df8a', '#d62728', '#ff9896', '#9467bd', '#c5b0d5',
-                          '#8c564b', '#c49c94', '#e377c2', '#f7b6d2', '#7f7f7f',
-                          '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5']
-T = 10
-time_steps = 10
-dt = T/time_steps
-integration_time = torch.linspace(0., T, time_steps)
 
 def plt_state_component(model, inputs, targets, timesteps, component, save_fig='component.pdf'):
-    """
-    I forgot..
-    """
-    from matplotlib import rc
+    
     rc("text", usetex = True)
     font = {'size'   : 18}
     rc('font', **font)
-    
     alpha = 0.75
 
     if hasattr(model, 'num_layers'):
-        # A faire.. ResNet (MNIST):
-        ends, _, trajectories = model(inputs)
-        trajectories = np.asarray(trajectories)
-        #color = ..
+        import sys
+        sys.exit("A faire! ResNet (MNIST)") 
     else:
+        T = model.T
         if False in (t < 2 for t in targets): 
             color = ['crimson' if targets[i, 0] == 0.0 else 'dodgerblue' if targets[i,0] == 1.0 else 'green' for i in range(len(targets))]
         else: 
@@ -47,8 +33,7 @@ def plt_state_component(model, inputs, targets, timesteps, component, save_fig='
     inputs_aug = inputs
     
     for i in range(inputs_aug.shape[0]):
-        if hasattr(model, 'num_layers'):
-            # ResNet
+        if hasattr(model, 'num_layers'):                                        # ResNet
             y_traj = [x[i][component].detach().numpy() for x in trajectories]
         else: 
             trajectory = trajectories[:, i, :]
@@ -60,6 +45,7 @@ def plt_state_component(model, inputs, targets, timesteps, component, save_fig='
         plt.rc('font', family='serif')
         plt.title(r'Component of $\mathbf{x}_{i}(t)$', fontsize=12)
         plt.xlabel(r'$t$ (layers)')
+        integration_time = torch.linspace(0., T, time_steps)
         plt.plot(integration_time, y_traj, c=color[i], alpha=alpha, linewidth=0.75)
         ax.set_xlim([0, T])
         plt.rc('grid', linestyle="dotted", color='lightgray')
@@ -74,32 +60,43 @@ def plt_train_error(model, inputs, targets, timesteps, save_fig='train_error.pdf
     """
     Plot the training error over each layer / time (not epoch!)
     """
-    from matplotlib import rc
-    from scipy.interpolate import interp1d
+    
     rc("text", usetex = True)
     font = {'size'   : 13}
     rc('font', **font)
-    
     alpha = 0.9
-    if hasattr(model, 'num_layers'):
-        ## ResNet
+
+    if hasattr(model, 'num_layers'):                                    # ResNet
         ends, _, traj = model(inputs)
         traj = np.asarray(traj)
-        _ = np.asarray(_)                   #traj -> (40, 256, 784)
-        #x_norm = [torch.norm(traj[k]) for k in range(timesteps)]
-        #x_proj_norm = [torch.norm(_[k]) for k in range(timesteps)]
+        _ = np.asarray(_)                                               #traj -> (40, 256, 784)
+        T = model.num_layers
     else:
         ends, _ = model(inputs)
         _ = _.detach()
+        T = model.T
+    integration_time = torch.linspace(0., T, timesteps)
     
-    loss = nn.CrossEntropyLoss()            # or nn.MSELoss()
-    error = [loss(_[k], targets) for k in range(timesteps)]
-    
+    if model.cross_entropy:
+        loss = nn.CrossEntropyLoss()                                 
+        error = [loss(_[k], targets) for k in range(timesteps)]
+    else:
+        loss = nn.MSELoss()
+        non_linearity = nn.Tanh()
+        import pickle
+        with open('text.txt', 'rb') as fp:
+            projector = pickle.load(fp)
+        error = [loss(non_linearity(_[k].matmul(projector[-2].t())+projector[-1]), targets) for k in range(timesteps)]
+
+    # Interpolate to increase smoothness
     f2 = interp1d(integration_time, error, kind='cubic', fill_value="extrapolate")
-    _time = torch.linspace(0., T, 180)
+    _time = torch.linspace(0., T, 150)
 
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
+    ax.set_axisbelow(True)                              #Axis beneath data
+    ax.xaxis.grid(color='lightgray', linestyle='dotted')
+    ax.yaxis.grid(color='lightgray', linestyle='dotted')
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.title(r'Decay of training error', fontsize=13)
@@ -109,8 +106,6 @@ def plt_train_error(model, inputs, targets, timesteps, save_fig='train_error.pdf
     plt.plot(_time, f2(_time), c='tab:red', alpha=alpha, linewidth=2.25, label=r'$\mathcal{E}(\mathbf{x}(t))$')
     ax.legend(prop={'size':10}, loc="upper right", frameon=True)
     ax.set_xlim([0, int(T)])
-    plt.rc('grid', linestyle="dotted", color='lightgray')
-    ax.grid(True)
 
     if len(save_fig):
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
@@ -121,58 +116,64 @@ def plt_norm_state(model, inputs, timesteps, save_fig='norm_state.pdf'):
     """
     Plot the norm of the state trajectory x(t) and the projection Px(t) over time/layer t.
     """
-    from matplotlib import rc
-    from scipy.interpolate import interp1d
+
     rc("text", usetex = True)
     font = {'size'   : 13}
     rc('font', **font)
-    
     alpha = 0.9    
 
     if not hasattr(model, 'num_layers'):
         trajectories = model.flow.trajectory(inputs, timesteps).detach()
         ends, _ = model(inputs)
-        _ = _.detach()
         x_norm = [np.linalg.norm(trajectories[k, :, :], ord = 'fro') for k in range(timesteps)]
-        _norm = [np.linalg.norm(_[k, :], ord = 'fro') for k in range(timesteps)]
-        # #x_norm_0 = [np.linalg.norm(trajectories[k, :, 0]) for k in range(timesteps)]
-        # #x_norm_1 = [np.linalg.norm(trajectories[k, :, 1]) for k in range(timesteps)]
-    else:
-        ## ResNet
+        _ = _.detach()
+        T = model.T
+        if model.cross_entropy:
+            _norm = [np.linalg.norm(_[k, :], ord = 'fro') for k in range(timesteps)]
+        else:
+            non_linearity = nn.Tanh()
+            import pickle
+            with open('text.txt', 'rb') as fp:
+                projector = pickle.load(fp)
+            _norm = [np.linalg.norm(non_linearity(_[k, :].matmul(projector[-2].t())+projector[-1]), ord='fro') 
+                    for k in range(timesteps)]
+    else:                                                                       # ResNet
         ends, _, traj = model(inputs)
         traj = np.asarray(traj)
-        _ = np.asarray(_)               #traj -> (40, 256, 784)
+        _ = np.asarray(_)                                                       #traj -> (40, 256, 784)
         x_norm = [torch.norm(traj[k]) for k in range(timesteps)]
         _norm = [torch.norm(_[k]) for k in range(timesteps)]
+        T = model.num_layers
     
+    integration_time = torch.linspace(0., T, timesteps)
+    # Interpolate to increase smoothness
     f1 = interp1d(integration_time, x_norm, kind='cubic', fill_value="extrapolate")
     f2 = interp1d(integration_time, _norm, kind='cubic', fill_value="extrapolate")
     _time = torch.linspace(0., T, 180)
 
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
+    ax.set_axisbelow(True)                              #Axis beneath data
+    ax.xaxis.grid(color='lightgray', linestyle='dotted')
+    ax.yaxis.grid(color='lightgray', linestyle='dotted')
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.title('Stability of norms', fontsize=13)
     plt.xlabel(r'$t$ (layers)')
     plt.plot(_time, f1(_time), c='tab:purple', alpha=alpha, linewidth=2.25, label=r'$|\mathbf{x}(t)|^2$')
     plt.plot(_time, f2(_time), c='tab:orange', alpha=alpha, linewidth=2.25, label=r'$|P\mathbf{x}(t)|^2$')
-    ax.legend(prop={'size':10}, loc="upper left", frameon=True)
+    ax.legend(prop={'size':10}, loc="lower right", frameon=True)
     ax.set_xlim([0, T])
-    plt.rc('grid', linestyle="dotted", color='lightgray')
-    ax.grid(True)
 
     if len(save_fig):
         plt.savefig(save_fig, format='pdf', bbox_inches='tight')
         plt.clf()
         plt.close()  
 
-def plt_norm_control():
+def plt_norm_control(model):
     """
     Plot the norm of the control parameters u(t) over time/layer t.
     """
-    from matplotlib import rc
-    from scipy.interpolate import interp1d
     rc("text", usetex = True)
     font = {'size'   : 13}
     rc('font', **font)
@@ -184,6 +185,11 @@ def plt_norm_control():
         dump = pickle.load(fp)
 
     simple = True
+    if hasattr(model, 'num_layers'):
+        raise ValueError('ResNets do not have this feature yet!')
+    else:
+        T, time_steps = model.T, model.time_steps
+    integration_time = torch.linspace(0., T, time_steps)
     if simple:
         # For now, only works for neural ODEs; sigma inside/outside.
         w_norm = [dump[k].abs().sum() for k in range(0, 2*time_steps, 2)]
@@ -203,6 +209,9 @@ def plt_norm_control():
     
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
+    ax.set_axisbelow(True)                              #Axis beneath data
+    ax.xaxis.grid(color='lightgray', linestyle='dotted')
+    ax.yaxis.grid(color='lightgray', linestyle='dotted')
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.title(r'Parameter sparsity: $M=8$', fontsize=13)
@@ -210,8 +219,6 @@ def plt_norm_control():
     plt.plot(_time, f1(_time), c='tab:blue', alpha=alpha, linewidth=2.25, label=r'$|u(t)|$')
     ax.legend(prop={'size':10}, loc="upper right", frameon=True)
     ax.set_xlim([0, T])
-    plt.rc('grid', linestyle="dotted", color='lightgray')
-    ax.grid(True)
 
     save_fig = 'controls.pdf'
     if len(save_fig):
@@ -231,7 +238,6 @@ def feature_plot(feature_history, targets, alpha=0.9, filename='features.pdf'):
     if False in (t < 2 for t in targets): 
         color = ['mediumpurple' if targets[i] == 2.0 else 'gold' if targets[i] == 0.0 else 'mediumseagreen' for i in range(len(targets))]
     else:
-        #color = ['crimson' if targets[i, 0] > 0.0 else 'dodgerblue' for i in range(len(targets))]
         color = ['crimson' if targets[i] > 0.0 else 'dodgerblue' for i in range(len(targets))]
     
     num_dims = feature_history[0].shape[1]
@@ -276,6 +282,7 @@ def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='gener
     Plots the final classifier; train and test data are superposed.
     Only for toy cloud data.
     """
+
     import matplotlib as mpl
     from matplotlib import rc
     import seaborn as sns
@@ -284,7 +291,6 @@ def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='gener
     rc("text", usetex = True)
     font = {'size'   : 13}
     rc('font', **font)
-    cross_entropy = True
 
     with open('data.txt', 'rb') as fp:
         data_line, test = pickle.load(fp)
@@ -297,6 +303,7 @@ def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='gener
         break
     
     if False in (t < 2 for t in targets): 
+        plot_range = (-2.5, 2.5)
         color = ['mediumpurple' if targets[i] == 2.0 else 'gold' if targets[i] == 0.0 else 'mediumseagreen' for i in range(len(targets))]
         test_color = ['mediumpurple' if test_targets[i] == 2.0 else 'gold' if test_targets[i] == 0.0 else 'mediumseagreen' for i in range(len(test_targets))]
         cmap = mpl.cm.get_cmap("viridis_r")
@@ -305,9 +312,10 @@ def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='gener
         color = ['crimson' if targets[i] > 0.0 else 'dodgerblue' for i in range(len(targets))]
         test_color = ['crimson' if test_targets[i] > 0.0 else 'dodgerblue' for i in range(len(test_targets))]
         cmap = sns.diverging_palette(250, 10, s=50, l=30, n=9, center="light", as_cmap=True)
-        if cross_entropy:
+        if model.cross_entropy:
             bounds = [0.0, 0.1, 0.25, 0.35, 0.5, 0.65, 0.75, 0.9, 1.0]          # cross-entropy labels
         else: 
+            print('Not cross entropy')
             bounds = [-1.0, -0.75,-0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]       # mse labels
     
     grid = torch.zeros((num_steps * num_steps, 2))
@@ -317,7 +325,7 @@ def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='gener
             grid[idx, :] = torch.Tensor([x1, x2])
             idx += 1
 
-    if not cross_entropy:
+    if not model.cross_entropy:
         predictions, traj = model(grid)
         vmin, vmax = -1.05, 1.05
     else:
@@ -375,3 +383,87 @@ def get_feature_history(trainer, dataloader, inputs, targets, num_epochs):
         features, _ = trainer.model(inputs, return_features=True)
         feature_history.append(features.detach())
     return feature_history
+
+def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
+                  labels=[], include_mean=True, 
+                  time_per_epoch=[], save_fig=''):
+
+    rc("text", usetex = True)
+    font = {'size'   : 13}
+    rc('font', **font)
+
+    for i, history_info in enumerate(all_history_info):
+        
+        color = 'tab:pink'
+        color_val = 'tab:blue'
+        if plot_type == 'loss':
+            histories = history_info["epoch_loss_history"]
+            histories_val = history_info["epoch_loss_val_history"]
+        elif plot_type == 'acc':
+            histories = history_info["epoch_acc_history"]
+            histories_val = history_info["epoch_acc_val_history"]
+
+        if len(time_per_epoch):
+            xlabel = "Time (seconds)"
+        else:
+            xlabel = "Epochs"
+
+        if include_mean:
+            ax = plt.gca()
+            ax.set_facecolor('whitesmoke')
+            ax.set_axisbelow(True)                              #Axis beneath data
+            ax.xaxis.grid(color='lightgray', linestyle='dotted')
+            ax.yaxis.grid(color='lightgray', linestyle='dotted')
+            plt.rc('text', usetex=True)
+            plt.rc('font', family='serif')
+                
+            mean_history = np.array(histories).mean(axis=0)
+            mean_history_val = np.array(histories_val).mean(axis=0)
+            if len(time_per_epoch):
+                epochs = time_per_epoch[i] * np.arange(len(histories[0]))
+            else:
+                epochs = list(range(len(histories[0])))
+
+            print(len(histories), histories[0], 'here')
+            print(len(histories_val), histories_val[0], 'ici')
+            if shaded_err:
+                std_history = np.array(histories).std(axis=0)
+                std_history_val = np.array(histories_val).std(axis=0)
+                plt.fill_between(epochs, mean_history - std_history,
+                                    mean_history + std_history, facecolor=color,
+                                    alpha=0.5)
+                # plt.fill_between(epochs, mean_history_val - std_history_val,
+                #                     mean_history_val + std_history_val, facecolor=color_val,
+                #                     alpha=0.5)
+                
+            else:
+                for k in range(len(histories)):
+                    plt.plot(epochs, histories[k], c=color, alpha=0.1)
+                    #plt.plot(epochs, histories_val[k], c=color_val, alpha=0.1)
+
+            plt.plot(epochs, mean_history, c=color, label="Train")
+            #plt.plot(epochs, mean_history_val, c=color_val, label="Test")
+            ax.legend(prop={'size': 10}, loc="lower left", frameon=True)
+            ax.set_xlim([0, len(epochs)-1])
+            #locs = epochs
+            #labels = range(1, len(epochs)+1)
+            #plt.xticks(locs, labels)
+            plt.xticks(range(0, len(epochs), 2), range(1, len(epochs)+1, 2))
+        else:
+            for k in range(len(histories)):
+                plt.plot(histories[k], c=color, alpha=0.1)     
+                #plt.plot(histories_val[k], c=color_val, alpha=0.1) 
+    
+    plt.xlabel(xlabel)
+
+    mnist = True
+    if plot_type == "acc" and mnist:
+        plt.ylim((0.75, 1.0))
+        plt.title('Accuracy')
+    else:
+        plt.title('Error')
+
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()

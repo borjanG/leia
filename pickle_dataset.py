@@ -5,7 +5,7 @@
 """
 ##------------#
 import pickle
-from data.dataloaders import *
+from data.dataloaders import ConcentricSphere, Chess, Tricolor
 import torch
 
 data_dim = 2

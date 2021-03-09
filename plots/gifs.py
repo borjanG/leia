@@ -10,10 +10,8 @@ import os
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+from matplotlib import rc
 
-T = 10
-time_steps = 10
-dt = T/time_steps
 
 def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
                    alpha_line=1, filename='trajectory.gif'):
@@ -35,7 +33,7 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
         #color = ['crimson' if targets[i, 0] > 0.0 else 'dodgerblue' for i in range(len(targets))]
         color = ['crimson' if targets[i] > 0.0 else 'dodgerblue' for i in range(len(targets))]
 
-    trajectories = model.odeblock.trajectory(inputs, timesteps).detach()
+    trajectories = model.flow.trajectory(inputs, timesteps).detach()
     num_dims = trajectories.shape[2]
 
     x_min, x_max = trajectories[:, :, 0].min(), trajectories[:, :, 0].max()
@@ -54,6 +52,7 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
         z_min -= margin * z_range
         z_max += margin * z_range
         
+    T = model.T 
     integration_time = torch.linspace(0.0, T, timesteps)
     
     interp_x = []
@@ -142,7 +141,6 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
 
 def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
 
-    from matplotlib import rc
     rc("text", usetex = True)
     font = {'size'   : 18}
     rc('font', **font)
@@ -159,7 +157,7 @@ def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     
-    pixels = 28         
+    pixels = 28       
 
     for k in range(timesteps):
         plt.title(r't={}'.format(k))
@@ -172,3 +170,44 @@ def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
         imgs.append(imageio.imread(img_file))
         os.remove(img_file) 
     imageio.mimwrite(filename, imgs) 
+
+def cifar_gif(model, inputs, timesteps, component, filename='cifar.gif'):
+
+    rc("text", usetex = True)
+    font = {'size'   : 18}
+    rc('font', **font)
+    
+    if not filename.endswith(".gif"):
+        raise RuntimeError("Name must end in with .gif, but ends with {}".format(filename))
+    base_filename = filename[:-4]
+    
+    ends, _, traj = model(inputs)
+    _ = np.asarray(_)
+
+    ax = plt.gca()
+    #ax.set_facecolor('whitesmoke')
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    
+    pixels = 32      
+    
+    for k in range(timesteps):
+        plt.title(r't={}'.format(k))
+        _ = normalize(traj[k].detach().numpy()[component])
+        plt.imsave('cifar{}.png'.format(k), _.reshape(pixels, pixels, 3))
+        plt.imsave('cifar{}.pdf'.format(k), _.reshape(pixels, pixels, 3), format='pdf')
+    
+    imgs = []
+    for i in range(timesteps):
+        img_file = base_filename + "{}.png".format(i)
+        imgs.append(imageio.imread(img_file))
+        os.remove(img_file) 
+    imageio.mimwrite(filename, imgs) 
+
+def normalize(x):
+    """
+    Normalize a list of sample image data in the range of 0 to 1
+    : x: List of image data.  The image shape is (32, 32, 3)
+    : return: Numpy array of normalized data
+    """
+    return np.array((x - np.min(x)) / (np.max(x) - np.min(x)))

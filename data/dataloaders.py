@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski
+@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
 """
 ##------------#
 import numpy as np
@@ -229,6 +229,46 @@ def mnist(batch_size=64, size=28, path_to_data='../../mnist_data'):
                                 transform=all_transforms)
     test_data = datasets.MNIST(path_to_data, train=False,
                                transform=all_transforms)
+
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+
+    return train_loader, test_loader
+
+def cifar10(batch_size=64, size=32, path_to_data='../../cifar10_data'):
+    """
+    CIFAR10 dataloader.
+    """
+
+    all_transforms = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor()
+    ])
+
+    train_data = datasets.CIFAR10(path_to_data, train=True, download=True,
+                                  transform=all_transforms)
+    test_data = datasets.CIFAR10(path_to_data, train=False,
+                                 transform=all_transforms)
+
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+
+    return train_loader, test_loader
+
+def fashion_mnist(batch_size=64, size=28, path_to_data='../../fashion-mnist_data'):
+    """
+    Fashion Mnist dataloader.
+    """
+
+    all_transforms = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor()
+    ])
+
+    train_data = datasets.FashionMNIST(path_to_data, train=True, download=True,
+                                  transform=all_transforms)
+    test_data = datasets.FashionMNIST(path_to_data, train=False,
+                                 transform=all_transforms)
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)

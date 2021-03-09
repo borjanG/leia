@@ -25,19 +25,21 @@ for inputs, targets in dataloader_viz:
 ##--------------#
 ## Setup:
 hidden_dim, data_dim = 2, 2
-T, num_steps = 10.0, 15
+T, num_steps = 10.0, 10
 dt = T/num_steps
-turnpike, ell1 = True, True
+turnpike = True
+bound = 0.
 
 if turnpike:
-    weight_decay = 0 if ell1 else dt*0.01
+    weight_decay = 0 if bound>0. else dt*0.01
 else: 
     weight_decay = dt*0.1
 
-anode = NeuralODE(device, data_dim, hidden_dim, augment_dim=0, non_linearity='relu')
+anode = NeuralODE(device, data_dim, hidden_dim, augment_dim=0, non_linearity='tanh', 
+                    architecture='bottleneck', T=T, time_steps=num_steps)
 optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=weight_decay)
-trainer_anode = Trainer(anode, optimizer_anode, device)
-num_epochs = 1000
+trainer_anode = Trainer(anode, optimizer_anode, device, turnpike=True, bound=bound)
+num_epochs = 500
 visualize_features = True
 
 import time
@@ -56,14 +58,14 @@ plt_train_error(anode, inputs, targets, timesteps=num_steps)
 feature_plot(feature_history, targets)
 plt_classifier(anode, num_steps=1000)
 #trajectory_gif(anode, inputs, targets, timesteps=num_steps)
-##--------------#
+# ##--------------#
 ## Saving the weights:
-pars = []
-for param_tensor in anode.state_dict():
-   pars.append(anode.state_dict()[param_tensor])
-   #print(param_tensor, "\t", anode.state_dict()[param_tensor])
+# pars = []
+# for param_tensor in anode.state_dict():
+#    pars.append(anode.state_dict()[param_tensor])
+#    #print(param_tensor, "\t", anode.state_dict()[param_tensor])
 
-with open("plots/controls.txt", "wb") as fp:
-   pickle.dump(pars, fp)
-plt_norm_control()
-##--------------#
+# with open("plots/controls.txt", "wb") as fp:
+#    pickle.dump(pars, fp)
+# plt_norm_control(anode)
+# ##--------------#
