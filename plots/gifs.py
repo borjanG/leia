@@ -161,8 +161,8 @@ def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
 
     for k in range(timesteps):
         plt.title(r't={}'.format(k))
-        plt.imsave('mnist{}.png'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='gray')
-        plt.imsave('mnist{}.pdf'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='gray', format='pdf')
+        plt.imsave('mnist{}.png'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='cividis')
+        plt.imsave('mnist{}.pdf'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='cividis', format='pdf')
     
     imgs = []
     for i in range(timesteps):

@@ -8,7 +8,7 @@ import torch
 device = torch.device('cpu')
 from torch.utils.data import DataLoader
 from plots.gifs import trajectory_gif
-from plots.plots import get_feature_history, plt_train_error, plt_norm_state, plt_norm_control, plt_classifier, feature_plot
+from plots.plots import get_feature_history, plt_train_error, plt_norm_state, plt_norm_control, plt_classifier, feature_plot, plt_dataset
 from models.training import Trainer
 from models.neural_odes import NeuralODE
 import pickle
@@ -18,17 +18,19 @@ import pickle
 with open('data.txt', 'rb') as fp:
     data_line, test = pickle.load(fp)
 dataloader = DataLoader(data_line, batch_size=64, shuffle=True)
-dataloader_viz = DataLoader(data_line, batch_size=172, shuffle=True)
+dataloader_viz = DataLoader(data_line, batch_size=128, shuffle=True)
 for inputs, targets in dataloader_viz:
     break
 
 ##--------------#
 ## Setup:
 hidden_dim, data_dim = 2, 2
-T, num_steps = 10.0, 10
+T, num_steps = 15.0, 15
 dt = T/num_steps
 turnpike = True
 bound = 0.
+fp = True
+cross_entropy = False
 
 if turnpike:
     weight_decay = 0 if bound>0. else dt*0.01
@@ -36,9 +38,10 @@ else:
     weight_decay = dt*0.1
 
 anode = NeuralODE(device, data_dim, hidden_dim, augment_dim=0, non_linearity='tanh', 
-                    architecture='bottleneck', T=T, time_steps=num_steps)
+                    architecture='inside', T=T, time_steps=num_steps, fixed_projector=fp, cross_entropy=cross_entropy)
 optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=weight_decay)
-trainer_anode = Trainer(anode, optimizer_anode, device, turnpike=True, bound=bound)
+trainer_anode = Trainer(anode, optimizer_anode, device, cross_entropy=cross_entropy, 
+                        turnpike=True, bound=bound, fixed_projector=fp)
 num_epochs = 500
 visualize_features = True
 
@@ -56,7 +59,7 @@ print("--- %s seconds ---" % (time.time() - start_time))
 plt_norm_state(anode, inputs, timesteps=num_steps)
 plt_train_error(anode, inputs, targets, timesteps=num_steps)
 feature_plot(feature_history, targets)
-plt_classifier(anode, num_steps=1000)
+plt_classifier(anode, num_steps=1500)
 #trajectory_gif(anode, inputs, targets, timesteps=num_steps)
 # ##--------------#
 ## Saving the weights:

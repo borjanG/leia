@@ -16,7 +16,7 @@ import pickle
 ##------------#
 ## Data:  
 style = 'mnist'
-fashion = False
+fashion = True
 if style == 'mnist':
     if fashion: 
         data_loader, test_loader = fashion_mnist(256)    
@@ -32,9 +32,10 @@ for inputs, targets in data_loader:
 ##--------------#
 ## Setup:
 output_dim = 10
-num_epochs = 20
-num_layers = 15
-hidden_dim = pixel+4
+num_epochs = 250
+num_layers = 20
+#hidden_dim = pixel+4
+hidden_dim = 32              #4-8 for mnist is ok.
 
 import time
 start_time = time.time()
@@ -49,7 +50,7 @@ print("--- %s seconds ---" % (time.time() - start_time))
 
 ##--------------#
 ## Plots:
-component = 3
+component = 10
 #plt_state_component(model, inputs.view(inputs.size(0),-1), targets, timesteps=num_layers, component=component, save_fig='{}.pdf'.format(component))
 plt_train_error(model, inputs.view(inputs.size(0),-1), targets, num_layers, save_fig='train_error.pdf')
 plt_norm_state(model, inputs.view(inputs.size(0),-1), num_layers, save_fig='norm_state.pdf')

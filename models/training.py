@@ -34,7 +34,10 @@ class Trainer():
         self.optimizer = optimizer
         self.cross_entropy = cross_entropy
         self.device = device
-        self.loss_func = losses['cross-entropy']
+        if cross_entropy:
+            self.loss_func = losses['cross_entropy']
+        else:
+            self.loss_func = losses['mse']
         self.print_freq = print_freq
         self.record_freq = record_freq
         self.steps = 0
@@ -84,7 +87,7 @@ class Trainer():
                     l1_regularization = 0.
                     for param in self.model.parameters():
                         l1_regularization += param.abs().sum()
-                    ## lambda = 5*1e-3 for spheres+inside
+                    ## lambda = 5*1e-3 for spheres+inside
                     loss = 1.5*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) 
                                     for k in range(time_steps-1)]) + 0.005*l1_regularization
                 else:
@@ -94,7 +97,7 @@ class Trainer():
                                             +self.loss_func(traj[k+1], xd) for k in range(time_steps-1)])
                     else:
                         ## beta=1.5 for point clouds
-                        beta = 1                          
+                        beta = 1.75                      
                         loss = beta*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) 
                                         for k in range(time_steps-1)])
             loss.backward()
@@ -123,12 +126,14 @@ class Trainer():
                         print("Loss: {:.3f}".format(self.loss_func(y_pred, y_batch).item()))
                         
             self.buffer['loss'].append(self.loss_func(traj[-1], y_batch).item())
-            self.buffer['accuracy'].append((softpred == y_batch).sum().item()/(y_batch.size(0)))
+            if not self.fixed_projector:
+                self.buffer['accuracy'].append((softpred == y_batch).sum().item()/(y_batch.size(0)))
 
             # At every record_freq iteration, record mean loss and clear buffer
             if self.steps % self.record_freq == 0:
                 self.histories['loss_history'].append(mean(self.buffer['loss']))
-                self.histories['acc_history'].append(mean(self.buffer['accuracy']))
+                if not self.fixed_projector:
+                    self.histories['acc_history'].append(mean(self.buffer['accuracy']))
 
                 # Clear buffer
                 self.buffer['loss'] = []
@@ -144,7 +149,8 @@ class Trainer():
 
         # Record epoch mean information
         self.histories['epoch_loss_history'].append(epoch_loss / len(data_loader))
-        self.histories['epoch_acc_history'].append(epoch_acc / len(data_loader))
+        if not self.fixed_projector:
+            self.histories['epoch_acc_history'].append(epoch_acc / len(data_loader))
 
         return epoch_loss / len(data_loader)
 

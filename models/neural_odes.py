@@ -11,7 +11,7 @@ MAX_NUM_STEPS = 1000
 
 # Useful dicos:
 activations = {'tanh': nn.Tanh(),
-                'relu': nn.ReLU(inplace=True),
+                'relu': nn.ReLU(),
                 'sigmoid': nn.Sigmoid(),
                 'leakyrelu': nn.LeakyReLU(negative_slope=0.25, inplace=True)
 }
@@ -134,7 +134,7 @@ class NeuralODE(nn.Module):
     - fixed_projector is a boolean indicating whether the output layer is trained or not
     ***
     """
-    def __init__(self, device, data_dim, hidden_dim, output_dim=2,
+    def __init__(self, device, data_dim, hidden_dim, output_dim=1,
                  augment_dim=0, non_linearity='tanh',
                  tol=1e-3, adjoint=False, architecture='inside', 
                  T=10, time_steps=10, 

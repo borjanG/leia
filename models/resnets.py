@@ -17,7 +17,8 @@ class ResidualBlock(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(data_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, data_dim)
+            nn.Linear(hidden_dim, data_dim),
+            nn.ReLU()
         )
 
     def forward(self, x):

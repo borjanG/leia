@@ -71,22 +71,22 @@ class ConcentricSphere(Dataset):
                 random_point_in_sphere(dim, inner_range[0], inner_range[1])
             )
             # Cross-entropy
-            __ = torch.tensor(0)
-            __ = __.type(torch.long)
-            self.targets.append(__)
+            #__ = torch.tensor(0)
+            #__ = __.type(torch.long)
+            #self.targets.append(__)
             # MSE + sigmoid
-            #self.targets.append(torch.Tensor([-1]))
+            self.targets.append(torch.Tensor([-1]))
 
         for _ in range(self.num_points_outer):
             self.data.append(
                 random_point_in_sphere(dim, outer_range[0], outer_range[1])
             )
             # Cross entropy
-            __ = torch.tensor(1)
-            __ = __.type(torch.long)
-            self.targets.append(__)
+            #__ = torch.tensor(1)
+            #__ = __.type(torch.long)
+            #self.targets.append(__)
             # MSE + sigmoid
-            #self.targets.append(torch.Tensor([1]))
+            self.targets.append(torch.Tensor([1]))
 
     def __getitem__(self, index):
         return self.data[index], self.targets[index]

@@ -90,7 +90,7 @@ def plt_train_error(model, inputs, targets, timesteps, save_fig='train_error.pdf
 
     # Interpolate to increase smoothness
     f2 = interp1d(integration_time, error, kind='cubic', fill_value="extrapolate")
-    _time = torch.linspace(0., T, 150)
+    _time = torch.linspace(0., T, 1000)
 
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
@@ -135,8 +135,10 @@ def plt_norm_state(model, inputs, timesteps, save_fig='norm_state.pdf'):
             import pickle
             with open('text.txt', 'rb') as fp:
                 projector = pickle.load(fp)
-            _norm = [np.linalg.norm(non_linearity(_[k, :].matmul(projector[-2].t())+projector[-1]), ord='fro') 
+            _norm = [np.linalg.norm(non_linearity(trajectories[k,:, :].matmul(projector[-2].t())+projector[-1]), ord='fro') 
                     for k in range(timesteps)]
+           #_norm = [np.linalg.norm(non_linearity(_[k, :].matmul(projector[-2].t())+projector[-1]), ord='fro') 
+           #         for k in range(timesteps)]
     else:                                                                       # ResNet
         ends, _, traj = model(inputs)
         traj = np.asarray(traj)
@@ -147,9 +149,9 @@ def plt_norm_state(model, inputs, timesteps, save_fig='norm_state.pdf'):
     
     integration_time = torch.linspace(0., T, timesteps)
     # Interpolate to increase smoothness
-    f1 = interp1d(integration_time, x_norm, kind='cubic', fill_value="extrapolate")
-    f2 = interp1d(integration_time, _norm, kind='cubic', fill_value="extrapolate")
-    _time = torch.linspace(0., T, 180)
+    f1 = interp1d(integration_time, x_norm, kind='quadratic', fill_value="extrapolate")
+    f2 = interp1d(integration_time, _norm, kind='quadratic', fill_value="extrapolate")
+    _time = torch.linspace(0., T, 50000)
 
     ax = plt.gca()
     ax.set_facecolor('whitesmoke')
@@ -162,7 +164,7 @@ def plt_norm_state(model, inputs, timesteps, save_fig='norm_state.pdf'):
     plt.xlabel(r'$t$ (layers)')
     plt.plot(_time, f1(_time), c='tab:purple', alpha=alpha, linewidth=2.25, label=r'$|\mathbf{x}(t)|^2$')
     plt.plot(_time, f2(_time), c='tab:orange', alpha=alpha, linewidth=2.25, label=r'$|P\mathbf{x}(t)|^2$')
-    ax.legend(prop={'size':10}, loc="lower right", frameon=True)
+    ax.legend(prop={'size':10}, loc="best", frameon=True)
     ax.set_xlim([0, T])
 
     if len(save_fig):
@@ -276,6 +278,50 @@ def feature_plot(feature_history, targets, alpha=0.9, filename='features.pdf'):
     plt.savefig(base_filename + "{}.pdf".format(i), format='pdf', bbox_inches='tight')
     plt.clf()
     plt.close()
+
+def plt_dataset(inputs, targets, plot_range=(-2.0, 2.0), save_fig="dataset.pdf"):
+
+    import matplotlib as mpl
+    from matplotlib import rc
+    import seaborn as sns
+    from torch.utils.data import DataLoader
+    import pickle
+    rc("text", usetex = True)
+    font = {'size'   : 13}
+    rc('font', **font)
+
+    with open('data.txt', 'rb') as fp:
+        data_line, test = pickle.load(fp)
+    dataloader_viz = DataLoader(data_line, batch_size=800, shuffle=True)
+    for inputs, targets in dataloader_viz:
+        break  
+    if False in (t < 2 for t in targets): 
+        plot_range = (-2.5, 2.5)
+        color = ['mediumpurple' if targets[i] == 2.0 else 'gold' if targets[i] == 0.0 else 'mediumseagreen' for i in range(len(targets))]
+    else:
+        color = ['crimson' if targets[i] > 0.0 else 'dodgerblue' for i in range(len(targets))]  
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    label_size = 13
+    plt.rcParams['xtick.labelsize'] = label_size
+    plt.rcParams['ytick.labelsize'] = label_size 
+    ax.set_axisbelow(True)
+    ax.xaxis.grid(color='lightgray', linestyle='dotted')
+    ax.yaxis.grid(color='lightgray', linestyle='dotted')
+    ax.set_facecolor('whitesmoke')
+            
+    plt.xlim(plot_range[0], plot_range[1])
+    plt.ylim(plot_range[0], plot_range[1])
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.xlabel(r'$x_1$', fontsize=12)
+    plt.ylabel(r'$x_2$', fontsize=12)
+    plt.scatter(inputs[:,0], inputs[:,1], c=color, alpha=0.95, marker = 'o', linewidth=0.45, edgecolors='black', label='train') 
+    
+    if len(save_fig):
+        plt.savefig(save_fig, format='pdf', bbox_inches='tight')
+        plt.clf()
+        plt.close()  
 
 def plt_classifier(model, plot_range=(-2.0, 2.0), num_steps=201, save_fig='generalization.pdf'):
     """
@@ -424,35 +470,33 @@ def histories_plt(all_history_info, plot_type='loss', shaded_err=False,
             else:
                 epochs = list(range(len(histories[0])))
 
-            print(len(histories), histories[0], 'here')
-            print(len(histories_val), histories_val[0], 'ici')
             if shaded_err:
                 std_history = np.array(histories).std(axis=0)
                 std_history_val = np.array(histories_val).std(axis=0)
                 plt.fill_between(epochs, mean_history - std_history,
                                     mean_history + std_history, facecolor=color,
                                     alpha=0.5)
-                # plt.fill_between(epochs, mean_history_val - std_history_val,
-                #                     mean_history_val + std_history_val, facecolor=color_val,
-                #                     alpha=0.5)
+                plt.fill_between(epochs, mean_history_val - std_history_val,
+                                    mean_history_val + std_history_val, facecolor=color_val,
+                                    alpha=0.5)
                 
             else:
                 for k in range(len(histories)):
                     plt.plot(epochs, histories[k], c=color, alpha=0.1)
-                    #plt.plot(epochs, histories_val[k], c=color_val, alpha=0.1)
+                    plt.plot(epochs, histories_val[k], c=color_val, alpha=0.1)
 
             plt.plot(epochs, mean_history, c=color, label="Train")
-            #plt.plot(epochs, mean_history_val, c=color_val, label="Test")
+            plt.plot(epochs, mean_history_val, c=color_val, label="Test")
             ax.legend(prop={'size': 10}, loc="lower left", frameon=True)
             ax.set_xlim([0, len(epochs)-1])
             #locs = epochs
             #labels = range(1, len(epochs)+1)
             #plt.xticks(locs, labels)
-            plt.xticks(range(0, len(epochs), 2), range(1, len(epochs)+1, 2))
+            plt.xticks(range(0, len(epochs), len(epochs)//10), range(1, len(epochs)+1, len(epochs)//10))
         else:
             for k in range(len(histories)):
                 plt.plot(histories[k], c=color, alpha=0.1)     
-                #plt.plot(histories_val[k], c=color_val, alpha=0.1) 
+                plt.plot(histories_val[k], c=color_val, alpha=0.1) 
     
     plt.xlabel(xlabel)
 

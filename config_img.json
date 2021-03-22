@@ -9,7 +9,7 @@
       "num_layers": 10,
       "augment_dim": 0,
       "lr": 1e-3,
-      "non_linearity": "relu",
+      "non_linearity": "tanh",
       "weight_decay": 0.01,
       "validation": true
   }
@@ -18,6 +18,6 @@
       "batch_size": 256,
       "record_freq": 10,
       "print_freq": 10,
-      "epochs": 5
+      "epochs": 40
   }
 }
