@@ -166,9 +166,9 @@ class NeuralODE(nn.Module):
         features = self.flow(x)
 
         if self.fixed_projector: 
-            import pickle
-            with open('text.txt', 'rb') as fp:
-                projector = pickle.load(fp)
+            projector = [torch.Tensor([[0.6876,  0.0074],
+                                        [-0.6876, -0.0074]]),
+                        torch.Tensor([-0.0256,  0.0256])]
             pred = features.matmul(projector[-2].t()) + projector[-1]
             pred = self.non_linearity(pred)
             self.proj_traj = self.flow.trajectory(x, self.time_steps)

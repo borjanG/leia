@@ -6,8 +6,6 @@ Created on Tue Jan 12 14:12:39 2021
 @author: borjangeshkovski
 """
 
-print(__doc__)
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import svm
