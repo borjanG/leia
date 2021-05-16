@@ -64,7 +64,8 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
         if num_dims == 3:
             interp_z.append(interp1d(integration_time, trajectories[:, i, 2], kind='cubic', fill_value='extrapolate'))
     
-    interp_time = 180
+    #interp_time = 150
+    interp_time = 5
     _time = torch.linspace(0., T, interp_time)
 
     plt.rc('grid', linestyle="dotted", color='lightgray')

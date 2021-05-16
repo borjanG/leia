@@ -9,7 +9,7 @@ from numpy import mean
 import torch
 
 losses = {'mse': nn.MSELoss(), 
-          'cross-entropy': nn.CrossEntropyLoss(), 
+          'cross_entropy': nn.CrossEntropyLoss(), 
           'ell1': nn.SmoothL1Loss()
 }
 
@@ -37,7 +37,8 @@ class Trainer():
         if cross_entropy:
             self.loss_func = losses['cross_entropy']
         else:
-            self.loss_func = losses['mse']
+            #self.loss_func = losses['mse']
+            self.loss_func = nn.MultiMarginLoss()
         self.print_freq = print_freq
         self.record_freq = record_freq
         self.steps = 0
@@ -126,13 +127,13 @@ class Trainer():
                         print("Loss: {:.3f}".format(self.loss_func(y_pred, y_batch).item()))
                         
             self.buffer['loss'].append(self.loss_func(traj[-1], y_batch).item())
-            if not self.fixed_projector:
+            if not self.fixed_projector and self.cross_entropy:
                 self.buffer['accuracy'].append((softpred == y_batch).sum().item()/(y_batch.size(0)))
 
             # At every record_freq iteration, record mean loss and clear buffer
             if self.steps % self.record_freq == 0:
                 self.histories['loss_history'].append(mean(self.buffer['loss']))
-                if not self.fixed_projector:
+                if not self.fixed_projector and self.cross_entropy:
                     self.histories['acc_history'].append(mean(self.buffer['accuracy']))
 
                 # Clear buffer

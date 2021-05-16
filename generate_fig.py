@@ -25,24 +25,24 @@ for inputs, targets in dataloader_viz:
 ##--------------#
 ## Setup:
 hidden_dim, data_dim = 2, 2
-T, num_steps = 15.0, 15
+T, num_steps = 5.0, 5
 dt = T/num_steps
-turnpike = True
+turnpike = False
 bound = 0.
-fp = True
-cross_entropy = False
+fp = False
+cross_entropy = True
 
 if turnpike:
     weight_decay = 0 if bound>0. else dt*0.01
 else: 
-    weight_decay = dt*0.1
+    weight_decay = dt*0.01          #0.01 for fp, 0.1 else
 
-anode = NeuralODE(device, data_dim, hidden_dim, augment_dim=0, non_linearity='tanh', 
-                    architecture='inside', T=T, time_steps=num_steps, fixed_projector=fp, cross_entropy=cross_entropy)
+anode = NeuralODE(device, data_dim, hidden_dim, augment_dim=0, non_linearity='relu', 
+                    architecture='bottleneck', T=T, time_steps=num_steps, fixed_projector=fp, cross_entropy=cross_entropy)
 optimizer_anode = torch.optim.Adam(anode.parameters(), lr=1e-3, weight_decay=weight_decay)
 trainer_anode = Trainer(anode, optimizer_anode, device, cross_entropy=cross_entropy, 
-                        turnpike=True, bound=bound, fixed_projector=fp)
-num_epochs = 500
+                        turnpike=turnpike, bound=bound, fixed_projector=fp)
+num_epochs = 50
 visualize_features = True
 
 import time

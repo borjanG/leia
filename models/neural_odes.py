@@ -70,8 +70,14 @@ class Dynamics(nn.Module):
             b1_t = self.fc1_time[k].bias
             w2_t = self.fc3_time[k].weight
             b2_t = self.fc3_time[k].bias
-            out = self.non_linearity(x.matmul(w1_t.t()) + b1_t)
-            out = out.matmul(w2_t.t()) + b2_t
+            #out = self.non_linearity(x.matmul(w1_t.t()) + b1_t)
+            #out = out.matmul(w2_t.t()) + b2_t
+            
+            #Domenec Test
+            out1 = torch.sqrt(self.non_linearity(x.matmul(w1_t.t())+torch.ones(self.hidden_dim) + b1_t) + 1e-6*torch.ones(self.hidden_dim))-torch.sqrt(1e-6*torch.ones(self.hidden_dim))
+            out2 = torch.sqrt(self.non_linearity(-x.matmul(w1_t.t())+torch.ones(self.hidden_dim) + b1_t) + 1e-6*torch.ones(self.hidden_dim))-torch.sqrt(1e-6*torch.ones(self.hidden_dim))
+            out = torch.min(out1, out2)
+            out = out.matmul(w2_t.t())
         return out
 
 class Semiflow(nn.Module):
@@ -134,7 +140,7 @@ class NeuralODE(nn.Module):
     - fixed_projector is a boolean indicating whether the output layer is trained or not
     ***
     """
-    def __init__(self, device, data_dim, hidden_dim, output_dim=1,
+    def __init__(self, device, data_dim, hidden_dim, output_dim=2,
                  augment_dim=0, non_linearity='tanh',
                  tol=1e-3, adjoint=False, architecture='inside', 
                  T=10, time_steps=10, 
@@ -166,9 +172,9 @@ class NeuralODE(nn.Module):
         features = self.flow(x)
 
         if self.fixed_projector: 
-            projector = [torch.Tensor([[0.6876,  0.0074],
-                                        [-0.6876, -0.0074]]),
-                        torch.Tensor([-0.0256,  0.0256])]
+            import pickle
+            with open('text.txt', 'rb') as fp:
+                projector = pickle.load(fp)
             pred = features.matmul(projector[-2].t()) + projector[-1]
             pred = self.non_linearity(pred)
             self.proj_traj = self.flow.trajectory(x, self.time_steps)
