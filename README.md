@@ -37,8 +37,6 @@ These include:
 }
 ```
 
-![Comparison of ISTA and NonCvx-Pro flows](imgs/flows.png)
-
 The toolbox can be improved by further adding the following functionalities: 
 - Weight clipping for more complex networks to ensure $L^1$ and $L^\infty$ constraints.
 - Time-dependent weights for non-uniform time-stepping.
