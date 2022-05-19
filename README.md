@@ -9,6 +9,8 @@
   <img src="videos/trajectory.gif" alt="animated" width="300"/>
 </p>
 
+## Citing 
+
 Code has been used to generate numerical simulations which appear in the following papers:
 
 1. "**Large-time asymptotics in deep learning**" by Carlos Esteve-Yague, Borjan Geshkovski, Dario Pighin and Enrique Zuazua.
