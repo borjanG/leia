@@ -6,7 +6,7 @@
 A <tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
 
 <p align="center">
-  <img src="videos/readme.mp4" alt="animated" width="300"/>
+  <img src="videos/trajectory.gif" alt="animated" width="300"/>
 </p>
 
 Code has been used to generate numerical simulations which appear in the following papers:
