@@ -4,6 +4,11 @@
 </h1>
 
 A <tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
+
+<p align="center">
+  <img src="videos/readme.mp4" alt="animated" width="300"/>
+</p>
+
 Code has been used to generate numerical simulations which appear in the following papers:
 
 1. "**Large-time asymptotics in deep learning**" by Carlos Esteve-Yague, Borjan Geshkovski, Dario Pighin and Enrique Zuazua.
