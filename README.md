@@ -1,9 +1,10 @@
-# Neural ODE and ResNet toolbox
+<!-- Title -->
+<h1 align="center">
+  Neural ODE and ResNet toolbox
+</h1>
 
-Small toolbox for solving supervised learning tasks using neural ODEs and ResNets.
-The code has been used to generate figures which appear in several papers.
-
-These include:
+A <tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
+Code has been used to generate numerical simulations which appear in the following papers:
 
 1. "**Large-time asymptotics in deep learning**" by Carlos Esteve-Yague, Borjan Geshkovski, Dario Pighin and Enrique Zuazua.
 
@@ -37,6 +38,8 @@ These include:
 }
 ```
 
+## Improvements
+
 The toolbox can be improved by further adding the following functionalities: 
-- Weight clipping for more complex networks to ensure $L^1$ and $L^\infty$ constraints.
+- Weight clipping for bottleneck architectures to ensure $L^1$ and $L^\infty$ constraints.
 - Time-dependent weights for non-uniform time-stepping.
