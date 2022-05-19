@@ -1,9 +1,9 @@
 <!-- Title -->
 <h1 align="center">
-  Neural ODE and ResNet toolbox
+  A neural ODE and ResNet toolbox
 </h1>
 
-A <tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
+<tt>Python</tt>+<tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
 
 <p align="center">
   <img src="videos/trajectory.gif" alt="animated" width="300"/>
