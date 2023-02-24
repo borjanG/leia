@@ -24,7 +24,7 @@ A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 
 <p align="center">
   <img src="videos/readme.mp4" alt="animated" width="300"/>
-  <img src="videos/gen.mp4" alt="animated" width="300"/>
+  <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
 
 <<<<<<< HEAD
