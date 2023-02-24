@@ -9,7 +9,9 @@
     <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
   </a>
   <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/dedalus">
-  <img src="https://zenodo.org/badge/DOI/10.1017/S0962492922000046.svg" link="https://doi.org/10.1017/S0962492922000046">
+  <a href="https://doi.org/10.1017/S0962492922000046">
+  <img src="https://zenodo.org/badge/DOI/10.1017/S0962492922000046.svg">
+  </a>
 </p>
 
 <p align="center">
