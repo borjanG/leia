@@ -1,5 +1,6 @@
 <!-- Title -->
 <h1 align="center">
+<<<<<<< HEAD
   LENO: Learning with Evolution equations and Neural ODEs
 </h1>
 
@@ -11,6 +12,20 @@ A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 </p>
 
 ## Citing
+=======
+  A neural ODE and ResNet toolbox
+</h1>
+
+<tt>Python</tt>+<tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
+
+<p align="center">
+  <img src="videos/trajectory.gif" alt="animated" width="325"/>
+</p>
+
+## Citing 
+
+Code has been used to generate numerical simulations which appear in the following papers:
+>>>>>>> 6bb576837f72a9c69b76d3c3f0b1db7062a50d6c
 
 1. "**Turnpike in optimal control of PDEs, ResNets, and beyond**"
 
