@@ -11,12 +11,37 @@
   <img src="https://zenodo.org/badge/DOI/10.1017/S0962492922000046.svg" link="https://doi.org/10.1017/S0962492922000046">
 </p>
 
-A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
-
 <p align="center">
   <img src="videos/traj.gif" alt="animated" width="300"/>
+  &nbsp;
+  &nbsp;
   <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
+
+A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being
+
+```python
+anode = NeuralODE(device, 
+                  data_dim, 
+                  hidden_dim, 
+                  augment_dim=1, 
+                  non_linearity='relu',
+                  architecture='bottleneck', 
+                  T=T, 
+                  time_steps=num_steps, 
+                  fixed_projector=False, 
+                  cross_entropy=cross_entropy)
+
+trainer_anode = Trainer(anode, 
+                        optimizer_anode, 
+                        device, 
+                        cross_entropy=cross_entropy, 
+                        turnpike=turnpike,
+                        bound=bound, 
+                        fixed_projector=fp)
+```
+
+An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state.
 
 ## Citing 
 
