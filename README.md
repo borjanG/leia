@@ -8,13 +8,13 @@
   <a href="https://www.repostatus.org/#concept">
     <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
   </a>
-  <img src="https://zenodo.org/badge/DOI/10.48550/arXiv.2203.03012.svg" link="https://doi.org/10.48550/arXiv.2203.03012">
+  <img src="https://zenodo.org/badge/DOI/10.1017/S0962492922000046.svg" link="https://doi.org/10.1017/S0962492922000046">
 </p>
 
 A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 
 <p align="center">
-  <img src="videos/readme.mp4" alt="animated" width="300"/>
+  <img src="videos/traj.gif" alt="animated" width="300"/>
   <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
 
