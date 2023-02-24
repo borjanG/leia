@@ -45,7 +45,7 @@ trainer_anode = Trainer(anode,
                         fixed_projector=fp)
 ```
 
-An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state.
+An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state. Generally speaking, there is flexibility in using different functionals and weight penalties (beyond simply $L^2$, for instance).
 
 ## Citing 
 
