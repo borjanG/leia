@@ -1,6 +1,6 @@
 <!-- Title -->
 <h1 align="center">
-  LENO: Learning with Evolution equations and Neural ODEs
+  Leia: Learning with EvolutIon equAtions
 </h1>
 
 <!-- Information badges -->
@@ -22,7 +22,9 @@
   <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
 
-A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being a simple instantiation of the neural ODE
+A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state. Generally speaking, there is flexibility in using different functionals and weight penalties (beyond simply $L^2$, for instance).
+
+A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being a simple instantiation of the neural ODE
 
 ```python
 anode = NeuralODE(device, 
@@ -47,8 +49,6 @@ trainer_anode = Trainer(anode,
                         bound=bound, 
                         fixed_projector=fp)
 ```
-
-An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state. Generally speaking, there is flexibility in using different functionals and weight penalties (beyond simply $L^2$, for instance).
 
 ## Citing 
 
