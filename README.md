@@ -3,7 +3,6 @@
   LENO: Learning with Evolution equations and Neural ODEs
 </h1>
 
-
 <!-- Information badges -->
 <p align="center">
   <a href="https://www.repostatus.org/#concept">
@@ -12,28 +11,14 @@
   <img src="https://zenodo.org/badge/DOI/10.48550/arXiv.2203.03012.svg" link="https://doi.org/10.48550/arXiv.2203.03012">
 </p>
 
-<<<<<<< HEAD
-## Citing
-  A neural ODE and ResNet toolbox
-</h1>
-
-<tt>Python</tt>+<tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
-=======
 A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
->>>>>>> 348513ec705745b9ad60a6a770a33ed99f20813b
 
 <p align="center">
   <img src="videos/readme.mp4" alt="animated" width="300"/>
   <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
 
-<<<<<<< HEAD
 ## Citing 
-
-Code has been used to generate numerical simulations which appear in the following papers:
-=======
-## Citing
->>>>>>> 348513ec705745b9ad60a6a770a33ed99f20813b
 
 1. "**Turnpike in optimal control of PDEs, ResNets, and beyond**"
 
