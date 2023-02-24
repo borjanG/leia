@@ -3,6 +3,15 @@
   LENO: Learning with Evolution equations and Neural ODEs
 </h1>
 
+
+<!-- Information badges -->
+<p align="center">
+  <a href="https://www.repostatus.org/#concept">
+    <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
+  </a>
+  <img src="https://zenodo.org/badge/DOI/10.48550/arXiv.2203.03012.svg" link="https://doi.org/10.48550/arXiv.2203.03012">
+</p>
+
 A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 
 <p align="center">
@@ -55,11 +64,3 @@ A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 The toolbox can be improved by further adding the following functionalities: 
 - Weight clipping for bottleneck architectures to ensure $L^1$ and $L^\infty$ constraints.
 - Time-dependent weights for non-uniform time-stepping. -->
-
-<!-- Information badges -->
-<p align="center">
-  <a href="https://www.repostatus.org/#concept">
-    <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
-  </a>
-  <img src="https://zenodo.org/badge/DOI/10.48550/arXiv.2203.03012.svg" link="https://doi.org/10.48550/arXiv.2203.03012">
-</p>
