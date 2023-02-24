@@ -22,8 +22,15 @@ color = ['crimson' if y[i] > 0.0 else 'dodgerblue' for i in range(len(y))]
 clf = svm.SVC(kernel='linear', C=1000)
 clf.fit(X, y)
 
-plt.scatter(X[:, 0], X[:, 1], c=color, s=30, cmap=plt.cm.Paired, marker = 'o', linewidth=0.45, edgecolors='black', alpha=0.85)
-#plt.scatter(X[:, 0], X[:, 1], c=y, s=30, cmap=plt.cm.Paired, marker = 'o', linewidth=0.45, edgecolors='black')
+plt.scatter(X[:, 0], 
+            X[:, 1], 
+            c=color, 
+            s=30, 
+            cmap=plt.cm.Paired, 
+            marker = 'o', 
+            linewidth=0.45, 
+            edgecolors='black', 
+            alpha=0.85)
 
 # plot the decision function
 ax = plt.gca()

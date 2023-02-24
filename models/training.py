@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
+@author: borjangeshkovski
 """
+
 import json
 import torch.nn as nn
 from numpy import mean
@@ -10,35 +11,56 @@ import torch
 
 losses = {'mse': nn.MSELoss(), 
           'cross_entropy': nn.CrossEntropyLoss(), 
-          'ell1': nn.SmoothL1Loss()
+          'ell1': nn.SmoothL1Loss(),
+          'multi-margin': nn.MultiMarginLoss()
 }
 
 class Trainer():
+    """What about
+  
+    Args:
+        arg: what it is
+    
+    Returns:
+        what returns
     """
-    Given an optimizer, we write the training loop for minimizing the functional.
-    We need several hyperparameters to define the different functionals.
+    """
+    Given an optimizer, we write the training loop for minimizing the cost.
+    We need several hyperparameters.
 
     ***
-    -- The boolean "turnpike" indicates whether we integrate the training error over [0,T]
-    where T is the time horizon intrinsic to the model.
-    -- The boolean "fixed_projector" indicates whether the output layer is given or trained
-    -- The float "bound" indicates whether we consider L1+Linfty reg. problem (bound>0.), or 
-    L2 reg. problem (bound=0.). If bound>0., then bound represents the upper threshold for the 
-    weights+biases.
+    -- The boolean "turnpike" indicates whether we integrate the training error
+        over [0,T] where T is the time horizon intrinsic to the model.
+    -- The boolean "fixed_projector" indicates whether the output layer is 
+        given or trained
+    -- The float "bound" indicates whether we consider L1+Linfty reg. problem 
+        (bound>0.), or L2 reg. problem (bound=0.). If bound>0., then bound 
+        represents the upper threshold for the weights+biases.
     ***
     """
-    def __init__(self, model, optimizer, device, cross_entropy=True,
-                 print_freq=10, record_freq=10, verbose=True, save_dir=None, 
-                 turnpike=True, bound=0., fixed_projector=False):
+
+    def __init__(self, 
+                 model, 
+                 optimizer, 
+                 device, 
+                 cross_entropy=True,
+                 print_freq=10, 
+                 record_freq=10, 
+                 verbose=True, 
+                 save_dir=None, 
+                 turnpike=True, 
+                 bound=0., 
+                 fixed_projector=False):
+
         self.model = model
         self.optimizer = optimizer
         self.cross_entropy = cross_entropy
         self.device = device
         if cross_entropy:
             self.loss_func = losses['cross_entropy']
+            #self.loss_func = losses['multi-margin']
         else:
-            #self.loss_func = losses['mse']
-            self.loss_func = nn.MultiMarginLoss()
+            self.loss_func = losses['mse']
         self.print_freq = print_freq
         self.record_freq = record_freq
         self.steps = 0
@@ -72,42 +94,48 @@ class Trainer():
             if not self.is_resnet:
                 y_pred, traj = self.model(x_batch)   
                 time_steps = self.model.time_steps 
-                T = self.model.T
-                dt = T/time_steps
+                
             else:
                 # In ResNet, dt=1=T/N_layers.
                 y_pred, traj, _ = self.model(x_batch)
                 time_steps = self.model.num_layers
-                T = time_steps
-                dt = 1 
 
-            if not self.turnpike:                                       ## Classical empirical risk minimization
-                loss = self.loss_func(y_pred, y_batch)
-            else:                                                       ## Augmented empirical risk minimization
+            if not self.turnpike:   
+                # ERM
                 if self.threshold>0:
-                    l1_regularization = 0.
+                    # L1(0,T; R^u) norm  
+                    l1_reg = 0.
                     for param in self.model.parameters():
-                        l1_regularization += param.abs().sum()
-                    ## lambda = 5*1e-3 for spheres+inside
-                    loss = 1.5*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) 
-                                    for k in range(time_steps-1)]) + 0.005*l1_regularization
+                        l1_reg += param.abs().sum()
+                    loss = 3*self.loss_func(y_pred, y_batch) + 1e-3*l1_reg
                 else:
-                    if self.fixed_projector: 
-                        xd = torch.tensor([[6.0/0.8156, 0.5/(2*0.4525)] if x==1 else [-6.0/0.8156, -2.0/(2*0.4525)] for x in y_batch])
-                        loss = self.loss_func(y_pred, y_batch.float())+sum([self.loss_func(traj[k], xd)
-                                            +self.loss_func(traj[k+1], xd) for k in range(time_steps-1)])
-                    else:
-                        ## beta=1.5 for point clouds
-                        beta = 1.75                      
-                        loss = beta*sum([self.loss_func(traj[k], y_batch)+self.loss_func(traj[k+1], y_batch) 
-                                        for k in range(time_steps-1)])
+                    loss = self.loss_func(y_pred, y_batch)
+            else:  
+                # Regret                                                                 
+                if self.threshold>0:
+                    # L1(0,T; R^u) norm  
+                    l1_reg = 0.
+                    beta = 0.005
+                    for param in self.model.parameters():
+                        l1_reg += param.abs().sum()
+                    loss = 1.5*sum([self.loss_func(traj[k], y_batch) 
+                                  + self.loss_func(traj[k+1], y_batch) 
+                                    for k in range(time_steps-1)])+0.005*l1_reg
+                else:
+                    # L2(0,T; R^u) norm
+                    beta = 1.75                      
+                    loss = beta*sum([self.loss_func(traj[k], y_batch) 
+                                     + self.loss_func(traj[k+1], y_batch) 
+                                     for k in range(time_steps-1)])
             loss.backward()
             self.optimizer.step()
             
             clipper = WeightClipper(self.threshold)
-            if self.threshold>0: 
-                self.model.apply(clipper)       # We apply the Linfty constraint to the trained parameters
+            if self.threshold > 0: 
+                # We apply the Linfty constraint to the trained parameters
+                self.model.apply(clipper)       
             
+            # We extract the prediction
             if self.cross_entropy:
                 epoch_loss += self.loss_func(traj[-1], y_batch).item()   
                 m = nn.Softmax()
@@ -121,14 +149,19 @@ class Trainer():
                 if self.verbose:
                     print("\nEpoch {}/{}".format(i, len(data_loader)))
                     if self.cross_entropy:
-                        print("Loss: {:.3f}".format(self.loss_func(traj[-1], y_batch).item()))
-                        print("Accuracy: {:.3f}".format((softpred == y_batch).sum().item()/(y_batch.size(0))))
+                        print("Loss: {:.3f}".
+                              format(self.loss_func(traj[-1], y_batch).item()))
+                        print("Accuracy: {:.3f}".
+                              format((softpred == y_batch).sum().item()
+                                     /(y_batch.size(0))))
                     else:
-                        print("Loss: {:.3f}".format(self.loss_func(y_pred, y_batch).item()))
+                        print("Loss: {:.3f}".
+                              format(self.loss_func(y_pred, y_batch).item()))
                         
             self.buffer['loss'].append(self.loss_func(traj[-1], y_batch).item())
             if not self.fixed_projector and self.cross_entropy:
-                self.buffer['accuracy'].append((softpred == y_batch).sum().item()/(y_batch.size(0)))
+                self.buffer['accuracy'].append((softpred == y_batch).
+                                               sum().item()/(y_batch.size(0)))
 
             # At every record_freq iteration, record mean loss and clear buffer
             if self.steps % self.record_freq == 0:
@@ -149,18 +182,16 @@ class Trainer():
             self.steps += 1
 
         # Record epoch mean information
-        self.histories['epoch_loss_history'].append(epoch_loss / len(data_loader))
+        self.histories['epoch_loss_history'].append(epoch_loss/len(data_loader))
         if not self.fixed_projector:
-            self.histories['epoch_acc_history'].append(epoch_acc / len(data_loader))
+            self.histories['epoch_acc_history'].append(epoch_acc/len(data_loader))
 
         return epoch_loss / len(data_loader)
 
 class WeightClipper(object):
+    """esssup constraint.
     """
-    $L^\infty$ constraint, only required if we work with L1-regularization.
-    We normalize the weights by dividing by the threshold once the constraint 
-    is saturated.
-    """
+
     def __init__(self, threshold, frequency=1):
         self.frequency = frequency
         self.threshold = threshold

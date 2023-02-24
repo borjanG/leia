@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
+@author: borjangeshkovski
 """
-##------------#
+
 import json
 import numpy as np
 import os
@@ -149,8 +149,7 @@ def run_and_save_experiments_img(device, path_to_config):
 
 
 def dataset_mean_loss(trainer, data_loader, device):
-    """
-    Returns mean loss of model on a dataset. 
+    """Returns mean loss of model on a dataset. 
     Useful for calculating validation loss.
     """
     epoch_loss = 0.
@@ -163,8 +162,7 @@ def dataset_mean_loss(trainer, data_loader, device):
     return epoch_loss / len(data_loader)
 
 def dataset_acc(trainer, data_loader, device):
-    """
-    Returns accuracy of model on a dataset. 
+    """Returns accuracy of model on a dataset. 
     Useful for calculating validation accuracy.
     """
     correct = 0

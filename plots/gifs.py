@@ -3,7 +3,7 @@
 """
 @author: borjangeshkovski
 """
-##------------#
+
 import imageio
 import torch
 import os
@@ -12,26 +12,37 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import rc
 
-
-def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
-                   alpha_line=1, filename='trajectory.gif'):
+def trajectory_gif(model, 
+                   inputs, 
+                   targets, 
+                   timesteps, 
+                   dpi=200, 
+                   alpha=0.9,
+                   alpha_line=1, 
+                   filename='trajectory.gif'):
     
-    from matplotlib import rc
     from scipy.interpolate import interp1d
     rc("text", usetex = True)
     font = {'size'   : 18}
     rc('font', **font)
 
     if not filename.endswith(".gif"):
-        raise RuntimeError("Name must end in with .gif, but ends with {}".format(filename))
+        raise RuntimeError("Name must end in with .gif, but ends with {}".
+                           format(filename))
     base_filename = filename[:-4]
 
     ## We focus on 3 colors at most
+    # For cross-entropy, as labels are in [m]
     if False in (t < 2 for t in targets): 
-        color = ['mediumpurple' if targets[i] == 2.0 else 'gold' if targets[i] == 0.0 else 'mediumseagreen' for i in range(len(targets))]
+        color = ['mediumpurple' if targets[i] == 2.0 
+                  else 'gold' if targets[i] == 0.0 
+                  else 'mediumseagreen' 
+                  for i in range(len(targets))]
+
     else:
-        #color = ['crimson' if targets[i, 0] > 0.0 else 'dodgerblue' for i in range(len(targets))]
-        color = ['crimson' if targets[i] > 0.0 else 'dodgerblue' for i in range(len(targets))]
+        color = ['#3658BF' if targets[i] > 0.0 
+                 else '#BF2633' 
+                 for i in range(len(targets))]
 
     trajectories = model.flow.trajectory(inputs, timesteps).detach()
     num_dims = trajectories.shape[2]
@@ -59,13 +70,18 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
     interp_y = []
     interp_z = []
     for i in range(inputs.shape[0]):
-        interp_x.append(interp1d(integration_time, trajectories[:, i, 0], kind='cubic', fill_value='extrapolate'))
-        interp_y.append(interp1d(integration_time, trajectories[:, i, 1], kind='cubic', fill_value='extrapolate'))
+        interp_x.append(interp1d(integration_time, trajectories[:, i, 0], 
+                                 kind='cubic', 
+                                 fill_value='extrapolate'))
+        interp_y.append(interp1d(integration_time, trajectories[:, i, 1], 
+                                 kind='cubic', 
+                                 fill_value='extrapolate'))
         if num_dims == 3:
-            interp_z.append(interp1d(integration_time, trajectories[:, i, 2], kind='cubic', fill_value='extrapolate'))
+            interp_z.append(interp1d(integration_time, trajectories[:, i, 2], 
+                                     kind='cubic', 
+                                     fill_value='extrapolate'))
     
-    #interp_time = 150
-    interp_time = 5
+    interp_time = 150
     _time = torch.linspace(0., T, interp_time)
 
     plt.rc('grid', linestyle="dotted", color='lightgray')
@@ -89,13 +105,23 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
             plt.ylabel(r'$x_2$', fontsize=12)
             plt.scatter([x(_time)[t] for x in interp_x], 
                          [y(_time)[t] for y in interp_y], 
-                         c=color, alpha=alpha, marker = 'o', linewidth=0.65, edgecolors='black', zorder=3)
+                         c=color, 
+                         alpha=alpha, 
+                         marker = 'o', 
+                         linewidth=0.65, 
+                         edgecolors='black', 
+                         zorder=3)
 
             if t > 0:
                 for i in range(inputs.shape[0]):
                     x_traj = interp_x[i](_time)[:t+1]
                     y_traj = interp_y[i](_time)[:t+1]
-                    plt.plot(x_traj, y_traj, c=color[i], alpha=alpha_line, linewidth = 0.75, zorder=1)
+                    plt.plot(x_traj, 
+                             y_traj, 
+                             c=color[i], 
+                             alpha=alpha_line, 
+                             linewidth = 0.75, 
+                             zorder=1)
             
         elif num_dims == 3:
             fig = plt.figure()
@@ -107,29 +133,59 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
             ax.scatter([x(_time)[t] for x in interp_x], 
                         [y(_time)[t] for y in interp_y],
                         [z(_time)[t] for z in interp_z],
-                        c=color, alpha=alpha, marker = 'o', linewidth=0.65, edgecolors='black')
+                        c=color, 
+                        alpha=1, 
+                        marker = 'o', 
+                        linewidth=0.75, 
+                        edgecolors='black')
+            
+            ax.scatter([x(_time)[0] for x in interp_x], 
+                        [y(_time)[0] for y in interp_y],
+                        [z(_time)[0] for z in interp_z],
+                        c='white', 
+                        alpha=0.3, 
+                        marker = '.', 
+                        linewidth=0.1, 
+                        edgecolors='black')
+            
             plt.rc('text', usetex=True)
-            plt.rc('font', family='serif')           
+            plt.rc('font', family='serif')
+            
+            
             if t > 0:
                 for i in range(inputs.shape[0]):
                     x_traj = interp_x[i](_time)[:t+1]
                     y_traj = interp_y[i](_time)[:t+1]
                     z_traj = interp_z[i](_time)[:t+1]
-                    ax.plot(x_traj, y_traj, z_traj, c=color[i], alpha=alpha_line, linewidth = 0.75)
-
+                    ax.plot(x_traj, 
+                            y_traj, 
+                            z_traj, 
+                            c=color[i], 
+                            alpha=0.75,
+                            linewidth = 0.5)
+            
             ax.set_xlim3d(x_min, x_max)
             ax.set_ylim3d(y_min, y_max)
             ax.set_zlim3d(z_min, z_max)
             
-            plt.rc('grid', linestyle="dotted", color='lightgray')
-            ax.grid(True)
+            #plt.rc('grid', linestyle="dotted", color='lightgray')
+            ax.grid(False)
             plt.locator_params(nbins=4)
 
+        if t in range(0, interp_time+1, 5):
+            ax.view_init(elev=10)
+            plt.savefig(base_filename + "{}.pdf".format(t), 
+                        format='pdf', 
+                        bbox_inches='tight')
+        if t == interp_time:
+            ax.view_init(elev=10)
+            plt.savefig(base_filename + "{}.pdf".format(t), 
+                        format='pdf', 
+                        bbox_inches='tight')
+        ax.view_init(elev=10, azim=(45+t/(interp_time)*360)%360)
         plt.savefig(base_filename + "{}.png".format(t),
-                    format='png', dpi=dpi, bbox_inches='tight')
-        # Save only 3 frames (.pdf for paper)
-        if t in [0, interp_time//5, interp_time//2, interp_time-1]:
-            plt.savefig(base_filename + "{}.pdf".format(t), format='pdf', bbox_inches='tight')
+                    format='png', dpi=dpi)
+        
         plt.clf()
         plt.close()
 
@@ -139,6 +195,7 @@ def trajectory_gif(model, inputs, targets, timesteps, dpi=200, alpha=0.9,
         imgs.append(imageio.imread(img_file))
         os.remove(img_file) 
     imageio.mimwrite(filename, imgs)
+
 
 def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
 
@@ -162,8 +219,13 @@ def mnist_gif(model, inputs, timesteps, component, filename='mnist.gif'):
 
     for k in range(timesteps):
         plt.title(r't={}'.format(k))
-        plt.imsave('mnist{}.png'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='cividis')
-        plt.imsave('mnist{}.pdf'.format(k), traj[k].detach().numpy()[component].reshape(pixels, pixels), cmap='cividis', format='pdf')
+        plt.imsave('mnist{}.png'.format(k), 
+                   traj[k].detach().numpy()[component].reshape(pixels, pixels), 
+                   cmap='cividis')
+        plt.imsave('mnist{}.pdf'.format(k), 
+                   traj[k].detach().numpy()[component].reshape(pixels, pixels), 
+                   cmap='cividis', 
+                   format='pdf')
     
     imgs = []
     for i in range(timesteps):
@@ -179,7 +241,8 @@ def cifar_gif(model, inputs, timesteps, component, filename='cifar.gif'):
     rc('font', **font)
     
     if not filename.endswith(".gif"):
-        raise RuntimeError("Name must end in with .gif, but ends with {}".format(filename))
+        raise RuntimeError("Name must end in with .gif, but ends with {}".
+                           format(filename))
     base_filename = filename[:-4]
     
     ends, _, traj = model(inputs)
@@ -195,8 +258,11 @@ def cifar_gif(model, inputs, timesteps, component, filename='cifar.gif'):
     for k in range(timesteps):
         plt.title(r't={}'.format(k))
         _ = normalize(traj[k].detach().numpy()[component])
-        plt.imsave('cifar{}.png'.format(k), _.reshape(pixels, pixels, 3))
-        plt.imsave('cifar{}.pdf'.format(k), _.reshape(pixels, pixels, 3), format='pdf')
+        plt.imsave('cifar{}.png'.format(k), 
+                   _.reshape(pixels, pixels, 3))
+        plt.imsave('cifar{}.pdf'.format(k), 
+                   _.reshape(pixels, pixels, 3), 
+                   format='pdf')
     
     imgs = []
     for i in range(timesteps):

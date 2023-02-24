@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
+@author: borjangeshkovski
 """
+
 import torch.nn as nn
 
 class ResidualBlock(nn.Module):
-    """
-    The dynamics x[k]+f(u[k],x[k]) at given (k, x[k])
-    """
     def __init__(self, data_dim, hidden_dim):
         super(ResidualBlock, self).__init__()
         self.data_dim = data_dim
@@ -25,10 +23,6 @@ class ResidualBlock(nn.Module):
         return x + self.mlp(x)
 
 class ResNet(nn.Module):
-    """
-    Returns the discrete ResNet semiflow x\mapsto\Phi(x), where
-    \Phi might designate the full discrete state of the ResNet, or some projection thereof.
-    """
     def __init__(self, data_dim, hidden_dim, num_layers, output_dim=1,
                  is_img=True):
         super(ResNet, self).__init__()

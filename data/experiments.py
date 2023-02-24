@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: borjangeshkovski (adapted from https://github.com/EmilienDupont/augmented-neural-odes)
+@author: borjangeshkovski
 """
-##------------#
+
 import json
 import numpy as np
 import os
@@ -15,8 +15,21 @@ from data.dataloaders import *
 from plots.plots import histories_plt
 
 
-def run_experiments(device, data_dim=2, viz_batch_size=512, num_reps=5,
-                    datasets=[], model_configs=[], training_config={}):
+def run_experiments(device, 
+                    data_dim=2, 
+                    viz_batch_size=512, 
+                    num_reps=5,
+                    datasets=[], 
+                    model_configs=[], 
+                    training_config={}):
+    """What about
+  
+    Args:
+        arg: what it is
+    
+    Returns:
+        what returns
+    """
     """
     Runs experiments for various model configurations on various datasets.
     """
@@ -125,6 +138,14 @@ def run_experiments(device, data_dim=2, viz_batch_size=512, num_reps=5,
     return results
 
 def dataset_mean_loss(trainer, data_loader, device):
+    """What about
+  
+    Args:
+        arg: what it is
+    
+    Returns:
+        what returns
+    """
     """
     Returns mean loss of model on a dataset. Useful for calculating validation loss.
     """
@@ -137,7 +158,19 @@ def dataset_mean_loss(trainer, data_loader, device):
         epoch_loss += loss.item()
     return epoch_loss / len(data_loader)
 
-def dataset_acc(trainer, data_loader, device, noise_type="none", noise_param=0):
+def dataset_acc(trainer, 
+                data_loader, 
+                device, 
+                noise_type="none", 
+                noise_param=0):
+    """What about
+  
+    Args:
+        arg: what it is
+    
+    Returns:
+        what returns
+    """
     """Returns accuracy of model on a dataset. Useful for calculating
     validation accuracy.
     """
@@ -169,8 +202,18 @@ def run_experiments_from_config(device, path_to_config):
     return results
 
 
-def run_and_save_experiments(device, path_to_config, save_models=False,
-                             save_tensors=False):
+def run_and_save_experiments(device, 
+                                path_to_config, 
+                                save_models=False,
+                                save_tensors=False):
+    """What about
+  
+    Args:
+        arg: what it is
+    
+    Returns:
+        what returns
+    """
     """
     Runs an experiment from a config file, saves logs and generates various
     plots of results.

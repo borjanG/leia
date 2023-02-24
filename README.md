@@ -1,17 +1,32 @@
 <!-- Title -->
 <h1 align="center">
-  Neural ODE and ResNet toolbox
+  LENO: Learning with Evolution equations and Neural ODEs
 </h1>
 
-A <tt>PyTorch</tt>-based toolbox for solving supervised learning tasks using neural ODEs and ResNets.
+A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs.
 
 <p align="center">
   <img src="videos/readme.mp4" alt="animated" width="300"/>
+  <img src="videos/gen.mp4" alt="animated" width="300"/>
 </p>
 
-Code has been used to generate numerical simulations which appear in the following papers:
+## Citing
 
-1. "**Large-time asymptotics in deep learning**" by Carlos Esteve-Yague, Borjan Geshkovski, Dario Pighin and Enrique Zuazua.
+1. "**Turnpike in optimal control of PDEs, ResNets, and beyond**"
+
+```
+@article{geshkovski2022turnpike,
+  title={Turnpike in optimal control of PDEs, ResNets, and beyond},
+  author={Geshkovski, Borjan and Zuazua, Enrique},
+  journal={Acta Numerica},
+  volume={31},
+  pages={135--263},
+  year={2022},
+  publisher={Cambridge University Press}
+}
+```
+
+2. "**Large-time asymptotics in deep learning**"
 
 ```
 @article{esteve2021large,
@@ -21,30 +36,30 @@ Code has been used to generate numerical simulations which appear in the followi
 }
 ```
 
-2. "**Sparse approximation in learning via neural ODEs**" by Carlos Esteve-Yague and Borjan Geshkovski.
+3. "**Sparse approximation in learning via neural ODEs**"
 
 ```
-@article{esteve2021sparse,
-  title={Sparse approximation in learning via neural ODEs},
+@article{esteve2023sparsity,
+  title={Sparsity in long-time control of neural ODEs},
   author={Esteve-Yag{\"u}e, Carlos and Geshkovski, Borjan},
-  journal={arXiv preprint arXiv:2102.13566},
-  year={2021}
+  journal={Systems \& Control Letters},
+  volume={172},
+  pages={105452},
+  year={2023},
+  publisher={Elsevier}
 }
 ```
 
-3. "**Turnpike in Lipschitz-nonlinear optimal control**" by Carlos Esteve-Yague, Borjan Geshkovski, Dario Pighin and Enrique Zuazua. 
-
-```
-@article{esteve2020turnpike,
-  title={Turnpike in Lipschitz-nonlinear optimal control},
-  author={Esteve-Yag{\"u}e, Carlos and Geshkovski, Borjan and Pighin, Dario and Zuazua, Enrique},
-  journal={arXiv preprint arXiv:2011.11091},
-  year={2020}
-}
-```
-
-## Improvements
+<!-- ## Improvements
 
 The toolbox can be improved by further adding the following functionalities: 
 - Weight clipping for bottleneck architectures to ensure $L^1$ and $L^\infty$ constraints.
-- Time-dependent weights for non-uniform time-stepping.
+- Time-dependent weights for non-uniform time-stepping. -->
+
+<!-- Information badges -->
+<p align="center">
+  <a href="https://www.repostatus.org/#concept">
+    <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
+  </a>
+  <img src="https://zenodo.org/badge/DOI/10.48550/arXiv.2203.03012.svg" link="https://doi.org/10.48550/arXiv.2203.03012">
+</p>

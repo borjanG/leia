@@ -9,7 +9,7 @@
       "num_layers": 10,
       "augment_dim": 0,
       "lr": 1e-3,
-      "non_linearity": "tanh",
+      "non_linearity": "relu",
       "weight_decay": 0.01,
       "validation": true
   }
