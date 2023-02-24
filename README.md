@@ -15,10 +15,11 @@
   <img src="videos/traj.gif" alt="animated" width="300"/>
   &nbsp;
   &nbsp;
+  &nbsp;
   <img src="videos/gen.gif" alt="animated" width="300"/>
 </p>
 
-A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being
+A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being a simple instantiation of the neural ODE
 
 ```python
 anode = NeuralODE(device, 
@@ -31,7 +32,10 @@ anode = NeuralODE(device,
                   time_steps=num_steps, 
                   fixed_projector=False, 
                   cross_entropy=cross_entropy)
+```
+and then of the optimization algorithm
 
+```python
 trainer_anode = Trainer(anode, 
                         optimizer_anode, 
                         device, 
