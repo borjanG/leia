@@ -5,10 +5,10 @@
 
 <!-- Information badges -->
 <p align="center">
+  <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/dedalus">
   <a href="https://www.repostatus.org/#concept">
     <img alt="Repo status" src="https://www.repostatus.org/badges/latest/concept.svg" />
   </a>
-  <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/dedalus">
   <a href="https://doi.org/10.1017/S0962492922000046">
   <img src="https://zenodo.org/badge/DOI/10.1017/S0962492922000046.svg">
   </a>
