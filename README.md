@@ -52,6 +52,8 @@ trainer_anode = Trainer(anode,
 
 ## Citing 
 
+If you are using this toolbox for your scientific publication, we would be very appreciative if you cite one of our following works on this topic.
+
 1. "**Turnpike in optimal control of PDEs, ResNets, and beyond**"
 
 ```
