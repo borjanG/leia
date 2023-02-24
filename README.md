@@ -1,6 +1,5 @@
 <!-- Title -->
 <h1 align="center">
-<<<<<<< HEAD
   LENO: Learning with Evolution equations and Neural ODEs
 </h1>
 
