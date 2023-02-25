@@ -28,15 +28,15 @@ A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modu
 
 ```python
 anode = NeuralODE(device, 
-                  data_dim, 
-                  hidden_dim, 
+                  data_dim=2, 
+                  hidden_dim=5, 
                   augment_dim=1, 
                   non_linearity='relu',
                   architecture='bottleneck', 
-                  T=T, 
-                  time_steps=num_steps, 
+                  T=10, 
+                  time_steps=20, 
                   fixed_projector=False, 
-                  cross_entropy=cross_entropy)
+                  cross_entropy=False)
 ```
 and then of the optimization algorithm
 
@@ -44,10 +44,10 @@ and then of the optimization algorithm
 trainer_anode = Trainer(anode, 
                         optimizer_anode, 
                         device, 
-                        cross_entropy=cross_entropy, 
-                        turnpike=turnpike,
-                        bound=bound, 
-                        fixed_projector=fp)
+                        cross_entropy=False, 
+                        turnpike=True,
+                        bound=0., 
+                        fixed_projector=False)
 ```
 
 ## Citing 
