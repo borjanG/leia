@@ -52,9 +52,9 @@ trainer_anode = Trainer(anode,
 
 ## Citing 
 
-If you are using this toolbox for your scientific publication, we would be very appreciative if you cite one of our following works on this topic.
+If you are using this toolbox for your scientific publication, we would be very appreciative if you were to cite one of our following articles on this topic.
 
-1. "**Turnpike in optimal control of PDEs, ResNets, and beyond**"
+1. **Turnpike in optimal control of PDEs, ResNets, and beyond**
 
 ```
 @article{geshkovski2022turnpike,
@@ -68,7 +68,7 @@ If you are using this toolbox for your scientific publication, we would be very 
 }
 ```
 
-2. "**Large-time asymptotics in deep learning**"
+2. **Large-time asymptotics in deep learning**
 
 ```
 @article{esteve2021large,
@@ -78,7 +78,7 @@ If you are using this toolbox for your scientific publication, we would be very 
 }
 ```
 
-3. "**Sparse approximation in learning via neural ODEs**"
+3. **Sparse approximation in learning via neural ODEs**
 
 ```
 @article{esteve2023sparsity,
