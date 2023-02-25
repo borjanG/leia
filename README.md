@@ -14,12 +14,12 @@
   </a>
 </p>
 
-<p align="header">
-  <img src="videos/traj.gif" alt="animated" width="300"/>
+<p align="center">
+  <img src="videos/traj.gif" alt="animated" width="302", height="311"/>
   &nbsp;
   &nbsp;
   &nbsp;
-  <img src="videos/gen.gif" alt="animated" width="300"/>
+  <img src="videos/gen.gif" alt="animated" width="365", height="311"/>
 </p>
 
 A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. An important element of this toolbox is that it allows for time-dependent weights (controls), and costs involving integrals of the state. Generally speaking, there is flexibility in using different functionals and weight penalties (beyond simply $L^2$, for instance).
