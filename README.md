@@ -14,7 +14,7 @@
   </a>
 </p>
 
-<p align="center">
+<p align="header">
   <img src="videos/traj.gif" alt="animated" width="300"/>
   &nbsp;
   &nbsp;
