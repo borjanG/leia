@@ -27,7 +27,7 @@ A <tt>PyTorch</tt> toolbox for solving learning tasks with neural ODEs. An impor
 A sample experiment may be found in <tt>generate_fig.py</tt>, with the main modules being a simple instantiation of the neural ODE
 
 ```python
-anode = NeuralODE(device, 
+model = NeuralODE(device, 
                   data_dim=2, 
                   hidden_dim=5, 
                   augment_dim=1, 
@@ -41,7 +41,7 @@ anode = NeuralODE(device,
 and then of the optimization algorithm
 
 ```python
-trainer_anode = Trainer(anode, 
+trainer_anode = Trainer(model, 
                         optimizer_anode, 
                         device, 
                         cross_entropy=False, 
