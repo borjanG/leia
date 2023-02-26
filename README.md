@@ -56,7 +56,7 @@ If you are using this toolbox for your scientific publication, we would be very 
 
 1. **Turnpike in optimal control of PDEs, ResNets, and beyond**
 
-```
+```bibtex
 @article{geshkovski2022turnpike,
   title={Turnpike in optimal control of PDEs, ResNets, and beyond},
   author={Geshkovski, Borjan and Zuazua, Enrique},
@@ -70,7 +70,7 @@ If you are using this toolbox for your scientific publication, we would be very 
 
 2. **Large-time asymptotics in deep learning**
 
-```
+```bibtex
 @article{esteve2021large,
   title={Large-time asymptotics in deep learning},
   author={Esteve-Yag{\"u}e, Carlos and Geshkovski, Borjan and Pighin, Dario and Zuazua, Enrique},
@@ -80,7 +80,7 @@ If you are using this toolbox for your scientific publication, we would be very 
 
 3. **Sparse approximation in learning via neural ODEs**
 
-```
+```bibtex
 @article{esteve2023sparsity,
   title={Sparsity in long-time control of neural ODEs},
   author={Esteve-Yag{\"u}e, Carlos and Geshkovski, Borjan},
