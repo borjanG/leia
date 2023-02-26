@@ -41,7 +41,7 @@ model = NeuralODE(device,
 and then of the optimization algorithm
 
 ```python
-trainer_anode = Trainer(model, 
+trainer = Trainer(model, 
                         optimizer_anode, 
                         device, 
                         cross_entropy=False, 
